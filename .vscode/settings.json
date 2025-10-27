@@ -1,0 +1,6 @@
+{
+    "C_Cpp.default.includePath": [
+        "/opt/rocm-7.0.0/lib/llvm/bin"
+    ],
+    "typescript.tsserver.web.projectWideIntellisense.enabled": true
+}
