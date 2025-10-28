@@ -1,0 +1,12 @@
+3497798221064656:3497798221117545 894:894 hipMalloc(ptr=0x7f28b1200000, size=8388608) :1
+3497798221124084:3497798221137791 894:894 hipMalloc(ptr=0x7f28af000000, size=33554432) :2
+3497798221138211:3497798221150899 894:894 hipMalloc(ptr=0x7f28ace00000, size=33554432) :3
+3497798221157829:3497798432843964 894:894 hipMemcpy(dst=0x7f28b1200000, src=0x7f6a9acb7010, sizeBytes=8388608, kind=1) :4
+3497798432848764:3497798433951905 894:894 hipMemcpy(dst=0x7f28af000000, src=0x7f6a98cb6010, sizeBytes=33554432, kind=1) :5
+3497798433955292:3497798433955825 894:894 __hipPushCallConfiguration(gridDim={z=16, y=64, x=16}, blockDim={z=8, y=8, x=8}, sharedMem=0, stream=0) :6
+3497798433960355:3497798433960710 894:894 __hipPopCallConfiguration(gridDim={z=16, y=64, x=16}, blockDim={z=8, y=8, x=8}, sharedMem=0, stream=0) :7
+3497798433966053:3497798443412254 894:894 hipLaunchKernel(function_address=0x201030, numBlocks={z=16, y=64, x=16}, dimBlocks={z=8, y=8, x=8}, args=0x7fffad028c94, sharedMemBytes=0, stream=0) kernel=batched_matrix_multiplication(unsigned int, unsigned int, unsigned int, unsigned int, float const*, float const*, float*, unsigned int, unsigned int, unsigned int) :8
+3497798443437482:3498130085106806 894:894 hipMemcpy(dst=0x7f6a96cb5010, src=0x7f28ace00000, sizeBytes=33554432, kind=2) :9
+3498130088570582:3498130092356409 894:894 hipFree(ptr=0x7f28b1200000) :10
+3498130092357764:3498130092450356 894:894 hipFree(ptr=0x7f28af000000) :11
+3498130092452369:3498130092537813 894:894 hipFree(ptr=0x7f28ace00000) :12

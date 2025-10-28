@@ -1,0 +1,2 @@
+"Name","Calls","TotalDurationNs","AverageNs","Percentage"
+"batched_matrix_multiplication(unsigned int, unsigned int, unsigned int, unsigned int, float const*, float const*, float*, unsigned int, unsigned int, unsigned int)",1,331634184678,331634184678,100.0
