@@ -3,6 +3,7 @@
 #include <sys/time.h>
 #include <iostream>
 #include <hip/hip_runtime.h>
+#include "batched_gemm.hpp"
 
 using namespace std;
 #define CEIL_DIV(a, b) (a + b - 1) / b
@@ -65,6 +66,10 @@ int main(int argc, char* argv[])
     float *A = nullptr, *B = nullptr, *C = nullptr; //host
     float *dA = nullptr, *dB = nullptr, *dC = nullptr; //devices
 
+    auto flop = [&](){
+        return (std::size_t)2 * (M * N) * K * Batch; //FMA
+    };
+
     A = static_cast<float*>(malloc(sizeA));
     B = static_cast<float*>(malloc(sizeB));
     C = static_cast<float*>(malloc(sizeC));
@@ -83,12 +88,13 @@ int main(int argc, char* argv[])
     HIP_CHECK_ERROR(hipMemcpy(dA, A, sizeA, hipMemcpyHostToDevice));
     HIP_CHECK_ERROR(hipMemcpy(dB, B, sizeB, hipMemcpyHostToDevice));
 
-    dim3 blockDim(8, 8, 8);
-    dim3 gridDim(CEIL_DIV(M, 8), CEIL_DIV(N, 8), CEIL_DIV(Batch, 8));
-    batched_matrix_multiplication<<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC, stride_a, stride_b, stride_c);
+    dim3 blockDim(256, 1, 1);
+    dim3 gridDim(CEIL_DIV(M, 128), CEIL_DIV(N, 128), CEIL_DIV(Batch, 1));
+    batched_matrix_multiplication<128, 128, 8, 8, 8><<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC);
 
     HIP_CHECK_ERROR(hipMemcpy(C, dC, sizeC, hipMemcpyDeviceToHost));
 
+    flaot tflops = static_cast<float>(flop) / 1.E9 / time;
     free(A);
     free(B);
     free(C);
