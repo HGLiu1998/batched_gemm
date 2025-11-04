@@ -18,31 +18,14 @@ using namespace std;
         }                                                                               \
     } while(0)                              \
 
-
-
-__global__ void 
-batched_matrix_multiplication(uint M, uint N, uint K, uint Batch, const float* A, const float* B, float* C, uint stride_a, uint stride_b, uint stride_c) 
-{
-    const uint x = blockIdx.x * blockDim.x + threadIdx.x; 
-    const uint y = blockIdx.y * blockDim.y + threadIdx.y;
-    const uint z = blockIdx.z * blockDim.z + threadIdx.z;
-
-    if (x < M && y < N && z < Batch) {
-        float temp = 0.0;
-        for (uint i = 0; i < K; ++i) {
-            temp += A[z * M * K + x * K + i] * B[z * K * N + i * N + y];        
-        }
-        printf("%f\n", temp);
-        C[z * M * N + x * N + y] = temp;
-    }
-}
-
-void randomize_matrix(float* mat, int N) {
+template <typename T>
+void randomize_matrix(T* mat, int N) {
     struct timeval time{};
     gettimeofday(&time, nullptr);
-    srand(time.tv_usec);
+    //srand(time.tv_usec);
+    srand(8773);
     for (int i = 0; i < N; ++i) {
-        float temp = static_cast<float>((rand() % 5)) + 0.01 * (rand() % 5);
+        T temp = static_cast<float>((rand() % 5)) + 0.01 * (rand() % 5);
         temp = (rand() % 2 == 0) ? temp : temp * (-1.);
         mat[i] = temp;
     }
@@ -52,49 +35,93 @@ void randomize_matrix(float* mat, int N) {
 int main(int argc, char* argv[])
 {
     // tokens = bs * (MTP + 1)
-    const unsigned int tokens = 128;
-    const unsigned int TP = 1;
+
+    hipEvent_t start, end;
+
+    //const unsigned int tokens = 128;
     const unsigned int M = 128, K = 128, N = 512;
-    const unsigned int Batch = 128; // TP = 1
-    const unsigned int stride_a = 1, stride_b = 1, stride_c = 1;
+    const unsigned int Batch = 128;
 
+    using type = bhalf_t;
 
-    size_t sizeA = M * Batch * K * sizeof(float);
-    size_t sizeB = Batch * K * N * sizeof(float);
+    size_t sizeA = M * Batch * K * sizeof(type);
+    size_t sizeB = Batch * K * N * sizeof(type);
     size_t sizeC = M * Batch * N * sizeof(float);
     
-    float *A = nullptr, *B = nullptr, *C = nullptr; //host
-    float *dA = nullptr, *dB = nullptr, *dC = nullptr; //devices
+    type *A = nullptr, *B = nullptr, *C = nullptr, *refC = nullptr;
+    type *dA = nullptr, *dB = nullptr, *dC = nullptr; //device
 
-    auto flop = [&](){
-        return (std::size_t)2 * (M * N) * K * Batch; //FMA
-    };
 
-    A = static_cast<float*>(malloc(sizeA));
-    B = static_cast<float*>(malloc(sizeB));
-    C = static_cast<float*>(malloc(sizeC));
+    A = (type*)(malloc(sizeA));
+    B = (type*)(malloc(sizeB));
+    C = (type*)(malloc(sizeC));
 
-    randomize_matrix(A, M * Batch * K);
-    randomize_matrix(B, Batch * K * N);
+    randomize_matrix<type>(A, M * Batch * K);
+    randomize_matrix<type>(B, Batch * K * N);
 
     //for (int i = 0 ; i < M * Batch * K; ++i) {
     //    cout << A[i] << endl;
-    //}
+    //} 
     
-    HIP_CHECK_ERROR(hipMalloc(reinterpret_cast<void**>(&dA), sizeA));
-    HIP_CHECK_ERROR(hipMalloc(reinterpret_cast<void**>(&dB), sizeB));
-    HIP_CHECK_ERROR(hipMalloc(reinterpret_cast<void**>(&dC), sizeC));
+    int total_loop = 100;
+    int warm_ups = 5;
+    printf("Start\n");
+
+    HIP_CHECK_ERROR(hipMalloc((void **)(&dA), sizeA));
+    HIP_CHECK_ERROR(hipMalloc((void **)(&dB), sizeB));
+    HIP_CHECK_ERROR(hipMalloc((void **)(&dC), sizeC));
 
     HIP_CHECK_ERROR(hipMemcpy(dA, A, sizeA, hipMemcpyHostToDevice));
     HIP_CHECK_ERROR(hipMemcpy(dB, B, sizeB, hipMemcpyHostToDevice));
 
-    dim3 blockDim(256, 1, 1);
-    dim3 gridDim(CEIL_DIV(M, 128), CEIL_DIV(N, 128), CEIL_DIV(Batch, 1));
-    batched_matrix_multiplication<128, 128, 8, 8, 8><<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC);
+
+    const uint BM = 128;
+    const uint BN = 256;
+    const uint BK = 16;
+    const uint TN = 8;
+    const uint TM = 8;
+
+    dim3 blockDim((BM * BN) / (TM * TN), 1, 1);
+    dim3 gridDim(CEIL_DIV(N, BN), CEIL_DIV(M, BM), CEIL_DIV(Batch, 1));
+
+    //dim3 blockDim(32, 32, 1);
+    //dim3 gridDim(CEIL_DIV(N, 32), CEIL_DIV(M, 32), CEIL_DIV(N, 32), CEIL_DIV(Batch, 1));
+    
+    for (int i = 0; i < warm_ups; ++i) {
+        //batched_matrix_multiplication<256, 256, 32, 32, 16><<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC);
+        batched_matrix_multiplication_2DTiling<BM, BN, BK, TM, TN><<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC);
+        //batched_matrix_multiplication_naive<<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC);
+    }
+    
+    hipEventCreate(&start);
+    hipEventCreate(&end);
+
+    hipDeviceSynchronize();
+    hipEventRecord(start, NULL);
+    
+    for (int i = 0; i < total_loop; ++i) {
+        //batched_matrix_multiplication<256, 256, 32, 32, 16><<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC);
+        batched_matrix_multiplication_2DTiling<BM, BN, BK, TM, TN><<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC);
+        //batched_matrix_multiplication_naive<<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC);
+    }
+
+    float elapsed_ms;
+    hipEventRecord(end, NULL);
+    hipEventSynchronize(end);
+    hipDeviceSynchronize();
+    hipEventElapsedTime(&elapsed_ms, start, end);
+    
+    hipEventDestroy(start);
+    hipEventDestroy(end);
 
     HIP_CHECK_ERROR(hipMemcpy(C, dC, sizeC, hipMemcpyDeviceToHost));
 
-    flaot tflops = static_cast<float>(flop) / 1.E9 / time;
+    size_t flop = (std::size_t)2 * (M * N) * K * Batch;
+    float time = elapsed_ms / total_loop;
+    printf("ELAPSED TIME: %.3f\n", time);
+    float tflops = (float)(flop) / time / (1E9);
+    printf("M: %d, N: %d, K: %d, Batch: %d, TFlops: %.3f\n", M, N, K, Batch, tflops);
+    
     free(A);
     free(B);
     free(C);
