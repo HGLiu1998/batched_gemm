@@ -3,35 +3,73 @@
 
 using bhalf_t = __bf16;
 using half_t = _Float16;
+using uint = unsigned int;
+using bf16x4 = __attribute__((__vector_size__(4 * sizeof(__bf16)))) __bf16;
+const int WarpSize = 64; //normally warpsize is 64 in amd GPU.
 
-
+namespace wt {
 template<const int BM, const int BN, const int BK, const int strideA, const int strideB>
 __device__ void 
 loadFromGMem(int N, int K, const bhalf_t *A, const bhalf_t *B, bhalf_t *As, bhalf_t *Bs, int innerRowA, int innerColA, int innerRowB, int innerColB) 
 {
-    using bf16x4 = __attribute__((__vector_size__(4 * sizeof(__bf16)))) __bf16;
 
     for (uint offset = 0; offset + strideA <= BM; offset += strideA) {
-        const bhalf_t
+        const bf16x4 temp = reinterpret_cast<const bf16x4 *>(&A[(innerRowA + offset) * K + innerRowA * 4])[0];
+        As[(innerColA * 4 + 0) * BM + innerRowA + offset] = temp[0];
+        As[(innerColA * 4 + 1) * BM + innerRowA + offset] = temp[1];
+        As[(innerColA * 4 + 2) * BM + innerRowA + offset] = temp[2];
+        As[(innerColA * 4 + 3) * BM + innerRowA + offset] = temp[3];
+    }
+
+    for (uint offset = 0; offset + strideB <= BK; offset += strideB) {
+        reinterpret_cast<bf16x4 *>(&Bs[(innerRowB + offset) * BN + innerColB * 4])[0] = reinterpret_cast<const bf16x4 *>(&B[(innerRowB + offset) * N + innerColB * 4])[0];
     }
 }
 
-template<const int BM, const int BN, const int BK, const int WM, const int WN, const int WNITER, const int TN, const int TM>
+template<const int BM, const int BN, const int BK, const int WM, const int WN, const int WMITER, const int WNITER, const int WSUBM, const int WSUBN, const int TM, const int TN>
+__device__ void
+processFromSMem(float *a, float *b, float *threadResults, const bhalf_t *As, const bhalf_t *Bs, const uint warpRow, const uint warpCol, const uint threadRowInWarp, const uint threadColInWarp)
+{
+    for (uint dotIdx = 0; dotIdx < BK; ++dotIdx) {
+        for (uint wSubRowIdx = 0 ; wSubRowIdx < WMITER; wSubRowIdx++) {
+            for (uint i = 0; i < TM; ++i) {
+                a[wSubRowIdx * TM + i] = As[(dotIdx * BM) + warpRow * WM + wSubRowIdx * WSUBM + threadRowInWarp * TM + i];
+            }
+        }
+         for (uint wSubColIdx = 0 ; wSubColIdx < WNITER; wSubColIdx++) {
+            for (uint i = 0; i < TN; ++i) {
+                b[wSubColIdx * TN + i] = Bs[(dotIdx * BN) + warpCol * WN + wSubColIdx * WSUBN + threadColInWarp * TN + i];
+            }
+        }
+
+        //warptile matmul
+        for (uint wSubRowIdx = 0; wSubRowIdx < WMITER; ++wSubRowIdx) {
+            for (uint wSubColIdx = 0; wSubColIdx < WNITER; ++wSubColIdx) {
+                for (uint resIdxM = 0; resIdxM < TM; ++resIdxM) {
+                    for (uint resIdxN = 0; resIdxN < TN; ++resIdxN) {
+                        threadResults[(wSubRowIdx * TM + resIdxM) * (WNITER * TN) + (wSubColIdx * TN) + resIdxN] = a[wSubRowIdx * TM + resIdxM] * b[wSubColIdx * TN + resIdxN];
+                    }
+                }
+            }
+        }
+    }
+}
+}
+
+template<const int BM, const int BN, const int BK, const int WM, const int WN, const int WMITER, const int WNITER, const int TM, const int TN, const int NUM_THREADS>
 __global__ void
 batched_matrix_multiplication_warpTiling(uint M, uint N, uint K, uint Batch, const bhalf_t *A, const bhalf_t *B, bhalf_t *C)
 {
-    const int WarpSize = 64; //normally warpsize is 64 in amd GPU.
     const int cRow = blockIdx.y;
     const int cCol = blockIdx.x;
     const int cBatch = blockIdx.z;
 
-    // warp 
+    // warp     
     const uint warpIdx = threadIdx.x / WarpSize;
     const uint warpCol = warpIdx % (BN / WN);
     const uint warpRow = warpIdx / (BN / WN);
 
     // size of warp tile
-    constexpr uint WMITER = (WM * WN) / (WarpSize * TM * TN * WNITER);
     constexpr uint WSUBM = WM / WMITER;
     constexpr uint WSUBN = WN / WNITER;
 
@@ -48,25 +86,49 @@ batched_matrix_multiplication_warpTiling(uint M, uint N, uint K, uint Batch, con
 
     const uint innerRowA = threadIdx.x / (BK / 4);
     const uint innerColA = threadIdx.x % (BK / 4);
-    constexpr uint rowStrideA = (NUM_THREADS * 4) / BK;
+    constexpr uint strideA = (NUM_THREADS * 4) / BK;
     const uint innerRowB = threadIdx.x / (BN / 4);
     const uint innerColB = threadIdx.x % (BN / 4);
-    constexpr uint rowStrideB = (NUM_THREADS * 4) / BN;
+    constexpr uint strideB = (NUM_THREADS * 4) / BN;
 
     float threadResults[WMITER * TM * WNITER * TN] = {0.0f};
     float a[WMITER * TM] = {0.0};
     float b[WNITER * TN] = {0.0};
     
     for (uint bkIdx = 0; bkIdx < K; bkIdx += BK) {
-        loadFromGMem()
+        wt::loadFromGMem<BM, BN, BK, strideA, strideB>(N, K, A, B, As, Bs, innerRowA, innerColA, innerRowB, innerColB);
         __syncthreads();
-        processFromSmem();
+        wt::processFromSmem<BM, BN, BK, WM, WN, WMITER, WNITER, WSUBM, WSUBN, TM, TN>(a, b, threadResults, As, Bs, warpRow, warpCol, threadRowInWarp, threadColInWarp);
         A += BK;
         B += BK * N;
         __syncthreads();
     }
 
-
+    for (uint wSubRowIdx = 0; wSubRowIdx < WMITER; ++wSubRowIdx) {
+        for (uint wSubColIdx = 0; wSubColIdx < WNITER; ++wSubColIdx) {
+            // move C pointer to current warp subtile
+            bhalf_t *C_interim = C + (wSubRowIdx * WSUBM) * N + wSubColIdx * WSUBN;
+            for (uint resIdxM = 0; resIdxM < TM; resIdxM += 1) {
+                for (uint resIdxN = 0; resIdxN < TN; resIdxN += 4) {
+                // load C vector into registers
+                bf16x4 tmp = reinterpret_cast<bf16x4 *>(
+                    &C_interim[(threadRowInWarp * TM + resIdxM) * N +
+                                threadColInWarp * TN + resIdxN])[0];
+                // perform GEMM update in reg
+                const int i = (wSubRowIdx * TM + resIdxM) * (WNITER * TN) +
+                                wSubColIdx * TN + resIdxN;
+                tmp[0] = threadResults[i + 0];
+                tmp[1] = threadResults[i + 1]; 
+                tmp[2] = threadResults[i + 2];
+                tmp[3] = threadResults[i + 3];
+                // write back
+                reinterpret_cast<bf16x4 *>(
+                    &C_interim[(threadRowInWarp * TM + resIdxM) * N +
+                                threadColInWarp * TN + resIdxN])[0] = tmp;
+                }
+            }
+        }
+    }
 }
 
 // normally, blockDim will limited to 256 or 512 (occ = 2). For MI300, warp threads will be 64,  WarpPerBlock will be 4 or 8.
