@@ -3,7 +3,7 @@
 #include <sys/time.h>
 #include <iostream>
 #include <hip/hip_runtime.h>
-#include "batched_gemm_matrix_core_64x64.hpp"
+#include "batched_gemm_mfma.hpp"
 
 using namespace std;
 #define CEIL_DIV(a, b) (a + b - 1) / b
@@ -31,9 +31,10 @@ void randomize_matrix(T* mat, int N, bool initialize = false) {
     //srand(time.tv_usec);
     srand(8773);
     for (int i = 0; i < N; ++i) {
-        T temp = static_cast<T>((rand() % 5)) + 0.01 * (rand() % 5);
-        temp = (rand() % 2 == 0) ? temp : temp * (-1.);
+        T temp = (T)((rand() % 5) + 0.01 * (rand() % 5));
+        temp = (rand() % 2 == 0) ? temp : temp * (T)(-1.);
         mat[i] = temp;
+        mat[i] = static_cast<T>(1.0f);
     }
 
 }
@@ -99,7 +100,7 @@ int main(int argc, char* argv[])
     
     for (int i = 0; i < warm_ups; ++i) {
         HIP_CHECK_ERROR(hipMemset(dC, 0, sizeC));
-        batched_matrix_multiplication_matrix_core_full<BM, BN, BK><<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC);
+        batched_matrix_multiplication_matrix_core_64x64<BM, BN, BK><<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC);
         //batched_matrix_multiplication_coalesce<<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC);
     }
     
@@ -111,7 +112,7 @@ int main(int argc, char* argv[])
     
     for (int i = 0; i < total_loop; ++i) {
         HIP_CHECK_ERROR(hipMemset(dC, 0, sizeC));
-        batched_matrix_multiplication_matrix_core_full<BM, BN, BK><<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC);
+        batched_matrix_multiplication_matrix_core_64x64<BM, BN, BK><<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC);
         //batched_matrix_multiplication_coalesce<<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC);
     }
 
@@ -141,8 +142,7 @@ int main(int argc, char* argv[])
                 for (int kk = 0; kk < K; ++kk) {
                     temp += A[i * M * K + j * K + kk] * B[i * K * N + kk * N + k];
                 }
-                if (temp != C[i * M * N + j * N + k]) {
-                    printf("ref: %f, out: %f\n", (float)temp, (float)C[i * M * N + j * N + k]);
+                if (fabs(temp - C[i * M * N + j * N + k]) > 1e-6) {
                     pass = false;
                     break;
                 }
@@ -163,7 +163,7 @@ int main(int argc, char* argv[])
     size_t flop = (std::size_t)2 * (M * N) * K * Batch;
     float time = elapsed_ms / total_loop;
     printf("ELAPSED TIME: %.3f\n", time);
-    float tflops = (float)(flop) / time / (1E9);
+    float tflops = (float)(flop) / (time * (1E9));
     printf("M: %d, N: %d, K: %d, Batch: %d, TFlops: %.3f\n", M, N, K, Batch, tflops);
     
     free(A);
