@@ -87,8 +87,8 @@ int main(int argc, char* argv[])
     HIP_CHECK_ERROR(hipMemcpy(dA, A, sizeA, hipMemcpyHostToDevice));
     HIP_CHECK_ERROR(hipMemcpy(dB, B, sizeB, hipMemcpyHostToDevice));
 
-    const uint BM = 64;
-    const uint BN = 64;
+    const uint BM = 128;
+    const uint BN = 128;
     const uint BK = 8;
     
     dim3 gridDim(CEIL_DIV(N, BN), CEIL_DIV(M, BM), CEIL_DIV(Batch, 1)); // handle 64 x 64 x 1;
@@ -100,7 +100,7 @@ int main(int argc, char* argv[])
     
     for (int i = 0; i < warm_ups; ++i) {
         HIP_CHECK_ERROR(hipMemset(dC, 0, sizeC));
-        batched_matrix_multiplication_matrix_core_64x64<BM, BN, BK><<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC);
+        batched_matrix_multiplication_matrix_core_128x128<BM, BN, BK><<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC);
         //batched_matrix_multiplication_coalesce<<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC);
     }
     
@@ -112,7 +112,7 @@ int main(int argc, char* argv[])
     
     for (int i = 0; i < total_loop; ++i) {
         HIP_CHECK_ERROR(hipMemset(dC, 0, sizeC));
-        batched_matrix_multiplication_matrix_core_64x64<BM, BN, BK><<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC);
+        batched_matrix_multiplication_matrix_core_128x128<BM, BN, BK><<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC);
         //batched_matrix_multiplication_coalesce<<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC);
     }
 

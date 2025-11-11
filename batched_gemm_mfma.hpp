@@ -7,7 +7,7 @@ using bf16x4 = __attribute__((__vector_size__(4 * sizeof(__bf16)))) __bf16;
 using floatx16 = __attribute__((__vector_size__(16 * sizeof(float)))) float;
 using fp16x4 = __attribute__((__vector_size__(4 * sizeof(_Float16)))) _Float16;
 
-template <uint BK, uint BM, uint BN>
+template <uint BM, uint BN, uint BK>
 __global__ void
 batched_matrix_multiplication_matrix_core_128x128(int M, int N, int K, int Batch, const bhalf_t *A, const bhalf_t *B, bhalf_t *C)
 {
@@ -30,7 +30,7 @@ batched_matrix_multiplication_matrix_core_128x128(int M, int N, int K, int Batch
 
 
     bf16x4 a[4], b[4]; //each thread load 4 A and 4 B
-    floatx16 acc[4] = {0}; //each thread handle 16 C
+    floatx16 acc[4] = {0.0f}; //each thread handle 16 C
 
     A += blockBatch * M * K + blockRow * BM * K;
     B += blockBatch * K * N + blockCol * BN;
@@ -48,10 +48,10 @@ batched_matrix_multiplication_matrix_core_128x128(int M, int N, int K, int Batch
             b[0][i] = B[(threadRow * 4 + i) * N + threadCol + subN];
             b[1][i] = B[(threadRow * 4 + i) * N + threadCol + subN + 32];
         }
-        acc[0] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[0], b[0], acc[0], 0, 0, 0); 
-        acc[1] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[0], b[1], acc[0], 0, 0, 0);
-        acc[2] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[1], b[0], acc[0], 0, 0, 0);
-        acc[3] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[1], b[1], acc[0], 0, 0, 0);
+        acc[0] = __builtin_amdgcn_mfma_f32_32x32x8f16(a[0], b[0], acc[0], 0, 0, 0); 
+        acc[1] = __builtin_amdgcn_mfma_f32_32x32x8f16(a[0], b[1], acc[0], 0, 0, 0);
+        acc[2] = __builtin_amdgcn_mfma_f32_32x32x8f16(a[1], b[0], acc[0], 0, 0, 0);
+        acc[3] = __builtin_amdgcn_mfma_f32_32x32x8f16(a[1], b[1], acc[0], 0, 0, 0);
     }
     for (int i = 0; i < 4; ++i) {
         int i1 = i % 2; 
@@ -60,9 +60,32 @@ batched_matrix_multiplication_matrix_core_128x128(int M, int N, int K, int Batch
             int j1 = j % 4;
             int j2 = j / 4;
             int idx = (threadRow * 4 + j1 + j2 * 4 + i2 * 32) * N  + threadCol + i1 * 32;
-            C[idx] += (__bf16)acc[i][j];
+            C[idx] += acc[i][j];
         }
     }
+    /**
+    for (int m = 0; m < BM; m += 32) { // M need to repeat 4 times
+        d = {0.0f};
+        for (int k = 0; k < K; k += 8) { // K need to repeat 128 / 8 times 
+            
+            for (int i = 0; i < 4; ++i) { // each thread handle 4 elements
+                uint aid = (m + tidx + warpRow) * 128 + (i + tidy * 4 + k * 8); //WarpRow always 0;
+                a[i] = A[aid];
+                uint bid = (i + tidy * 4 + k * 8) * 512 + warpCol * 32 + tidx;
+                b[i] = B[bid];
+            }
+            d = __builtin_amdgcn_mfma_f32_32x32x8f16(a, b, d, 0, 0, 0);
+        }
+
+        for (int i = 0; i < 4; ++i) {
+            for (int j = 0; j < 4; ++j) {
+                uint cidx = (i + tidy * 4 + j * 8) * 512 + warpCol * 32 + tidx;
+                C[cidx] = d[i + 4 * j];
+            }
+        }
+    }
+    **/
+ 
 }
 
 
