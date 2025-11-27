@@ -1,0 +1,1 @@
+/opt/rocm/bin/hipcc -ftemplate-backtrace-limit=0  -fPIE  -Wno-gnu-line-marker -fbracket-depth=512 -O3 -DNDEBUG -rdynamic CMakeFiles/batched_gemm.dir/batched_gemm.cpp.o -o batched_gemm 

@@ -1,11 +1,44 @@
 #include <hip/hip_runtime.h>
+#include <memory>
 
 using bhalf_t = __bf16;
 using half_t = _Float16;
 using uint = unsigned int;
-using bf16x4 = __attribute__((__vector_size__(4 * sizeof(__bf16)))) __bf16;
-using floatx16 = __attribute__((__vector_size__(16 * sizeof(float)))) float;
-using fp16x4 = __attribute__((__vector_size__(4 * sizeof(_Float16)))) _Float16;
+
+using bf16x4 = __bf16 __attribute__((ext_vector_type(4)));
+using floatx16 = float __attribute__((ext_vector_type(16)));
+
+namespace cktile
+{   
+template <typename Y, typename X>
+__host__ __device__ Y bit_cast(const X &x)
+{
+    static_assert(__has_builtin(__builtin_bit_cast), "");
+    static_assert(sizeof(X) == sizeof(Y), "Do not support cast between different size of type");
+
+    return __builtin_bit_cast(Y, x);
+}
+
+__host__ __device__ float bf16_to_float(bhalf_t x)
+{
+    uint16_t xtemp = bit_cast<uint16_t>(x);
+    union
+    {
+        uint32_t int32;
+        float fp32;
+    } u = {uint32_t(xtemp) << 16};
+    return u.fp32;
+}
+
+
+}
+
+
+#define ASM_DEBUG(maker) \
+    __builtin_amdgcn_sched_barrier(0); \
+    asm volatile(maker);               \
+    __builtin_amdgcn_sched_barrier(0); \
+
 
 template <uint BM, uint BN, uint BK>
 __global__ void
@@ -87,53 +120,154 @@ batched_matrix_multiplication_matrix_core_128x128(int M, int N, int K, int Batch
     **/
  
 }
+#if 0
+
+__device__ int16x4_t
+llvm_amdgcn_raw_buffer_load_i16x4(int32x4_t srsrc,
+                                  index_t voffset,
+                                  index_t soffset,
+                                  index_t glc_slc) __asm("llvm.amdgcn.raw.buffer.load.v4i16");
+
+__global__ void
+test_load_to_global(const bhalf_t* A)
+{
+    __shared__ bhalf_t As[256];
+    int x = threadIdx.x;
+    
+    std::uintptr_t as_int = reinterpret_cast<std::uintptr_t>(A);
+    std::uintptr_t as_u64 = static_cast<std::uint64_t>(as_int);
+    buffer_resource rc{}
+    i32x4 rsrc = 
+
+    llvm_amdgcn_raw_buffer_load_i16x4(
+
+    
+}
+#endif
 
 
 template <const uint BM, const uint BN, const uint BK>
 __global__ void
-__launch_bounds__(256, 1)
-batched_matrix_multiplication_matrix_core_64x64x4(uint M, uint N, uint K, uint Batch, const bhalf_t *A, const bhalf_t *B, bhalf_t *C)
+__launch_bounds__(256, 2)
+__attribute__((amdgpu_waves_per_eu(1, 1)))
+batched_matrix_multiplication_matrix_core_64x64x4(uint M, uint N, uint K, uint Batch, const bhalf_t *A, const bhalf_t *B, bhalf_t *C, dim3 strideA, dim3 strideB, dim3 strideC, int debug_level = 1)
 {
     int blockRow = blockIdx.y;
     int blockCol = blockIdx.x;
     int blockBatch = blockIdx.z;
 
-    int warpIdx = threadIdx.x / 64;
-    int warpCol = warpIdx % 2;
-    int warpRow = warpIdx / 2;
+    int warpIdx = threadIdx.x / 64; // 0: [0-63], 1: [64-127], 2: [128-191], 3: [192-255]
+    int warpCol = warpIdx % 2; // 0, 1, 0, 1
+    int warpRow = warpIdx / 2; // 0, 0, 1, 1
 
     int threadIdxInWarp = threadIdx.x % 64;
-    int threadRow = threadIdxInWarp / 32;
-    int threadCol = threadIdxInWarp % 32; //lane 0 - 31
+    int threadRow = threadIdxInWarp / 32; // [0, 1]
+    int threadCol = threadIdxInWarp % 32; // [0-31] 
 
-    A += blockBatch * M * K + blockRow * BM * K;
-    B += blockBatch * K * N + blockCol * BN;
-    C += blockBatch * M * N + blockRow * BM * N + blockCol * BN;
+    int strideAB = strideA.x;
+    int strideAM = strideA.y;
+    int strideAK = strideA.z;
+
+    int strideBB = strideB.x;
+    int strideBK = strideB.y;
+    int strideBN = strideB.z;
+
+    int strideCB = strideC.x;
+    int strideCM = strideC.y;
+    int strideCN = strideC.z;
+
+    A += blockBatch * strideAB + blockRow * BM * strideAM;
+    B += blockBatch * strideBB + blockCol * BN * strideBN;
+    C += blockBatch * strideCB + blockRow * BM * strideCM + blockCol * BN * strideCN;
 
     bf16x4 a, b;
     floatx16 d = {0};
     
+    __shared__ bhalf_t As[BM * BK]; 
+    __shared__ bhalf_t Bs[BN * BK];
+    __shared__ bhalf_t Cs[BN * BM];
+   
+    uint aRow = threadCol + warpRow * 32; // 0: [0-31] 1:[0-31] 2:[31-63] 3:[31-63]
+    uint aCol = threadRow * 4;            // 0: [0] 1:[0] 2:[1] 3:[1]
+    uint bRow = threadRow * 4;            // 0, 4  
+    uint bCol = threadCol + warpCol * 32; // 0 - 31 32 - 63
 
-    A += (threadCol + warpRow * 32) * K + threadRow * 4;
-    B += threadRow * 4 * N + threadCol + warpCol * 32;
+    uint aLoc = aRow * strideAM + aCol * strideAK;
+    uint bLoc = bRow * strideBK + bCol * strideBN;
+
+    uint asLoc = aRow * BK + aCol;
+    uint bsLoc = bCol * BK + bRow;
+
+    //A += aLoc;
+    //B += bLoc;
 
     for (int k = 0; k < K; k += BK) {
-        for (int i = 0; i < 4; ++i) {
-            a[i] = A[i + k];
-            b[i] = B[(i + k) * N];
-        }
-        //d = __builtin_amdgcn_mfma_f32_32x32x8f16(a, b, d, 0, 0, 0);
-        d = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a, b, d, 0, 0, 0);
-    }
+        //ASM_DEBUG("; Global load to LDS");
+        //ASM_DEBUG("; Load A");
+        *(bf16x4*)(&As[asLoc]) = *(bf16x4*)(&A[aLoc]);
 
+        //ASM_DEBUG("; Load B");
+        bf16x4 temp;
+        #pragma unroll
+        for (int i = 0; i < 4; ++i) {
+            temp[i] = B[bLoc + i * strideBK];
+        }
+        *(bf16x4*)(&Bs[bsLoc]) = temp;
+
+        __syncthreads();
+        //ASM_DEBUG("; LDS load to reg");
+        a = *(bf16x4*)(&As[asLoc]);
+        b = *(bf16x4*)(&Bs[bsLoc]);
+        //#pragma unroll
+        //for (int i = 0; i < 4; ++i) {
+            //a[i] = A[i];
+            //b[i] = B[i * strideBK];
+        //    a[i] = As[asLoc + i];
+        //    b[i] = Bs[bsLoc + i];
+        //}
+        //ASM_DEBUG("; MFMA");
+        ///d = __builtin_amdgcn_mfma_f32_32x32x8f16(a, b, d, 0, 0, 0);
+        d = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a, b, d, 0, 0, 0);        
+        //ASM_DEBUG("; Next BK");
+        A += BK;
+        B += BK * strideBK;
+       
+        #if 0
+        if (debug_level == 1 && blockIdx.x == 0 && blockIdx.z == 0 && blockIdx.y == 0 && threadIdx.x == 0) {
+            for (int i = 0; i < 4; ++i) {
+                printf("A: %f, B: %f\n", (float)a[i], (float)b[i]);
+            }
+            for (int i = 0; i < 16; ++i) {
+                 printf("D: %f\n", d[i]);
+            }
+            printf("\n");
+        }
+        #endif
+       
+    }
+    
     C += (4 * threadRow + warpRow * 32) * N + threadCol + warpCol * 32;
 
+
+    //ASM_DEBUG(";Before write C");
+    #pragma unroll
     for (int i = 0; i < 16; ++i) {
         int rowNum = i % 4;
         int rowIdx = i / 4;
         int idx = (rowNum + rowIdx * 8) * N;
-        C[idx] += (__bf16)d[i];
+        
+        //__builtin_amdgcn_sched_barrier(0); 
+        //asm volatile("; before cast ");
+        //__builtin_amdgcn_sched_barrier(0);
+        bhalf_t temp;
+        //ASM_DEBUG("; static casting");
+        temp = static_cast<__bf16>(d[i]);
+        //ASM_DEBUG("; before store C");
+        C[idx] = temp;              
+        //ASM_DEBUG("; before store C");
+
     }
+    //ASM_DEBUG(";After write C");
       
 }
 
@@ -141,7 +275,7 @@ batched_matrix_multiplication_matrix_core_64x64x4(uint M, uint N, uint K, uint B
 template <const uint BM, const uint BN, const uint BK>
 __global__ void
 __launch_bounds__(256, 1)
-batched_matrix_multiplication_matrix_core_64x64(uint M, uint N, uint K, uint Batch, const bhalf_t *A, const bhalf_t *B, bhalf_t *C, bool debug_level = 0)
+batched_matrix_multiplication_matrix_core_64x64(uint M, uint N, uint K, uint Batch, const bhalf_t *A, const bhalf_t *B, bhalf_t *C, bool debug_level = 1)
 {
     int blockRow = blockIdx.y;
     int blockCol = blockIdx.x;
@@ -174,7 +308,7 @@ batched_matrix_multiplication_matrix_core_64x64(uint M, uint N, uint K, uint Bat
             }
             if (debug_level == 1 && blockIdx.x == 0 && blockIdx.z == 0 && blockIdx.y == 0 && threadIdx.x == 0) {
                 for (int i = 0; i < 4; ++i) {
-                    printf("A: %f, B: %f\n", (float)a[0][i], (float)b[0][i]);
+                    printf("A: %f, B: %f\n", cktile::bf16_to_float(a[0][i]), cktile::bf16_to_float(b[0][i]));
                 }
                 for (int i = 0; i < 16; ++i) {
                      printf("D: %f\n", d[0][i]);

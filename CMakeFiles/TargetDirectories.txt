@@ -1,0 +1,3 @@
+/workspace/batched_gemm/CMakeFiles/batched_gemm.dir
+/workspace/batched_gemm/CMakeFiles/edit_cache.dir
+/workspace/batched_gemm/CMakeFiles/rebuild_cache.dir

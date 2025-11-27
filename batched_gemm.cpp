@@ -1,4 +1,5 @@
 #include <cmath>
+#include <cstdint>
 #include <cstdio>
 #include <sys/time.h>
 #include <iostream>
@@ -18,23 +19,16 @@ using namespace std;
         }                                                                               \
     } while(0)                              \
 
-template <typename T>
-void randomize_matrix(T* mat, int N, bool initialize = false) {
-    if (initialize) {
-        for (int i = 0; i < N; ++i) {
-            mat[i] = static_cast<T>(0.0f);
-        }
-        return;
-    }
+
+void randomize_matrix(bhalf_t* mat, int N) {
     struct timeval time{};
     gettimeofday(&time, nullptr);
     //srand(time.tv_usec);
     srand(8773);
     for (int i = 0; i < N; ++i) {
-        T temp = (T)((rand() % 5) + 0.01 * (rand() % 5));
-        temp = (rand() % 2 == 0) ? temp : temp * (T)(-1.);
-        mat[i] = temp;
-        mat[i] = static_cast<T>(1.0f);
+        bhalf_t temp = (bhalf_t)((rand() % 5) + 0.01 * (rand() % 5));
+        temp = (rand() % 2 == 0) ? temp : temp * (bhalf_t)(-1.);
+        mat[i] = static_cast<bhalf_t>(1);
     }
 
 }
@@ -64,8 +58,8 @@ int main(int argc, char* argv[])
     C = (type*)(malloc(sizeC));
     refC = (type*)(malloc(sizeC));
 
-    randomize_matrix<type>(A, M * Batch * K);
-    randomize_matrix<type>(B, Batch * K * N);
+    randomize_matrix(A, M * Batch * K);
+    randomize_matrix(B, Batch * K * N);
 
     //for (int i = 0 ; i < M * Batch * K; ++i) {
     //    cout << A[i] << endl;
@@ -87,20 +81,24 @@ int main(int argc, char* argv[])
     HIP_CHECK_ERROR(hipMemcpy(dA, A, sizeA, hipMemcpyHostToDevice));
     HIP_CHECK_ERROR(hipMemcpy(dB, B, sizeB, hipMemcpyHostToDevice));
 
-    const uint BM = 128;
-    const uint BN = 128;
+    const uint BM = 64;
+    const uint BN = 64;
     const uint BK = 8;
     
     dim3 gridDim(CEIL_DIV(N, BN), CEIL_DIV(M, BM), CEIL_DIV(Batch, 1)); // handle 64 x 64 x 1;
-    dim3 blockDim(256, 1, 1); // 4 warps
+    dim3 blockDim(256, 1, 1);
 
+    dim3 strideA(M * K, K, 1);
+    dim3 strideB(N * K, N, 1);
+    //dim3 strideB(N * K, K, 1);
+    dim3 strideC(M * N, N, 1);
 
     //dim3 blockDim(32, 32, 1);
     //dim3 gridDim(CEIL_DIV(M, 32), CEIL_DIV(N, 32), CEIL_DIV(Batch, 1));
     
     for (int i = 0; i < warm_ups; ++i) {
         HIP_CHECK_ERROR(hipMemset(dC, 0, sizeC));
-        batched_matrix_multiplication_matrix_core_128x128<BM, BN, BK><<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC);
+        batched_matrix_multiplication_matrix_core_64x64x4<BM, BN, BK><<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC, strideA, strideB, strideC);
         //batched_matrix_multiplication_coalesce<<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC);
     }
     
@@ -112,7 +110,7 @@ int main(int argc, char* argv[])
     
     for (int i = 0; i < total_loop; ++i) {
         HIP_CHECK_ERROR(hipMemset(dC, 0, sizeC));
-        batched_matrix_multiplication_matrix_core_128x128<BM, BN, BK><<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC);
+        batched_matrix_multiplication_matrix_core_64x64x4<BM, BN, BK><<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC, strideA, strideB, strideC);
         //batched_matrix_multiplication_coalesce<<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC);
     }
 
@@ -134,15 +132,23 @@ int main(int argc, char* argv[])
     //batched_matrix_multiplication_naive<<<testGridDim, testBlockDim>>>(M, N, K, Batch, dA, dB, dRefC);
     //HIP_CHECK_ERROR(hipMemcpy(refC, dRefC, sizeC, hipMemcpyDeviceToHost));
 
+    size_t flop = (std::size_t)2 * (M * N) * K * Batch;
+    float time = elapsed_ms / total_loop;
+    printf("ELAPSED TIME: %.3f\n", time);
+    float tflops = (float)(flop) / (time * (1E9));
+    printf("M: %d, N: %d, K: %d, Batch: %d, TFlops: %.3f\n", M, N, K, Batch, tflops);
+
     bool pass = true;
     for (int i = 0; i < Batch; ++i) {
         for (int j = 0; j < M; ++j) {
             for (int k = 0; k < N; ++k) {
-                bhalf_t temp = 0.0;
+                float temp = 0.0;
                 for (int kk = 0; kk < K; ++kk) {
-                    temp += A[i * M * K + j * K + kk] * B[i * K * N + kk * N + k];
+                    temp += (float)A[i * M * K + j * K + kk] * (float)B[i * K * N + kk * N + k];
                 }
-                if (fabs(temp - C[i * M * N + j * N + k]) > 1e-6) {
+                bhalf_t result = static_cast<__bf16>(temp);
+                if (fabs(result - C[i * M * N + j * N + k]) > 1e-6) {
+                    printf("%f, %f mismatch\n", static_cast<float>(temp), static_cast<float>(C[i * M * N + j * N + k]));
                     pass = false;
                     break;
                 }
@@ -158,13 +164,6 @@ int main(int argc, char* argv[])
     if (!pass) {
         printf("BMM result is not correct\n");
     }
-    
-
-    size_t flop = (std::size_t)2 * (M * N) * K * Batch;
-    float time = elapsed_ms / total_loop;
-    printf("ELAPSED TIME: %.3f\n", time);
-    float tflops = (float)(flop) / (time * (1E9));
-    printf("M: %d, N: %d, K: %d, Batch: %d, TFlops: %.3f\n", M, N, K, Batch, tflops);
     
     free(A);
     free(B);
