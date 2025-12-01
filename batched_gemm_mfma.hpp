@@ -183,9 +183,11 @@ batched_matrix_multiplication_matrix_core_64x64x4(uint M, uint N, uint K, uint B
     bf16x4 a, b;
     floatx16 d = {0};
     
-    __shared__ bhalf_t As[BM * BK]; 
-    __shared__ bhalf_t Bs[BN * BK];
-    __shared__ bhalf_t Cs[BN * BM];
+    __shared__ __attribute__((aligned(16))) bhalf_t As[BM * BK]; 
+    __shared__ __attribute__((aligned(16))) bhalf_t Bs[BN * BK];
+    // Transposed + padded LDS buffer for B to avoid bank conflicts
+    __shared__ __attribute__((aligned(16))) bhalf_t BsT[BN * (BK + 1)];
+    __shared__ __attribute__((aligned(16))) bhalf_t Cs[BN * BM];
    
     uint aRow = threadCol + warpRow * 32; // 0: [0-31] 1:[0-31] 2:[31-63] 3:[31-63]
     uint aCol = threadRow * 4;            // 0: [0] 1:[0] 2:[1] 3:[1]
@@ -197,27 +199,39 @@ batched_matrix_multiplication_matrix_core_64x64x4(uint M, uint N, uint K, uint B
 
     uint asLoc = aRow * BK + aCol;
     uint bsLoc = bCol * BK + bRow;
+    uint bsLocT = bCol * (BK + 1) + bRow; // transposed, padded stride on K
 
     //A += aLoc;
     //B += bLoc;
 
     for (int k = 0; k < K; k += BK) {
+        // Prefetch next tile (best-effort; may be optimized by compiler)
+        __builtin_prefetch(A + aLoc + BK, 0, 1);
+        __builtin_prefetch(B + bLoc + BK * strideBK, 0, 1);
         //ASM_DEBUG("; Global load to LDS");
         //ASM_DEBUG("; Load A");
-        *(bf16x4*)(&As[asLoc]) = *(bf16x4*)(&A[aLoc]);
+        // Vectorized global load of A (contiguous bf16x4)
+        const bhalf_t* __restrict Aptr = A + aLoc;
+        Aptr = (const bhalf_t*)__builtin_assume_aligned(Aptr, 8);
+        *(bf16x4*)(&As[asLoc]) = *(const bf16x4*)(Aptr);
 
         //ASM_DEBUG("; Load B");
+        // Gather strided from global B, then store transposed into LDS with padding
         bf16x4 temp;
         #pragma unroll
         for (int i = 0; i < 4; ++i) {
-            temp[i] = B[bLoc + i * strideBK];
+            const bhalf_t* __restrict Bptr = B + bLoc + i * strideBK;
+            temp[i] = __builtin_nontemporal_load(Bptr);
+            BsT[(bCol) * (BK + 1) + (bRow + i)] = temp[i];
         }
+        // Keep original non-transposed for optional debugging/comparison
         *(bf16x4*)(&Bs[bsLoc]) = temp;
 
         __syncthreads();
         //ASM_DEBUG("; LDS load to reg");
         a = *(bf16x4*)(&As[asLoc]);
-        b = *(bf16x4*)(&Bs[bsLoc]);
+        // Vector read from transposed LDS so 4 elements are contiguous per thread
+        b = *(bf16x4*)(&BsT[bsLocT]);
         //#pragma unroll
         //for (int i = 0; i < 4; ++i) {
             //a[i] = A[i];
