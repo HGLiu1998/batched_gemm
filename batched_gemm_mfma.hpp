@@ -183,11 +183,9 @@ batched_matrix_multiplication_matrix_core_64x64x32(uint M, uint N, uint K, uint 
     bf16x4 a, b;
     floatx16 d = {0};
     
-    // Padded LDS buffers to avoid bank conflicts
-    __shared__ __attribute__((aligned(16))) bhalf_t As[BM * BK]; 
-    //__shared__ __attribute__((aligned(16))) bhalf_t Bs[BN * BK];
-    // Transposed + padded LDS buffer for B to avoid bank conflicts
-    __shared__ __attribute__((aligned(16))) bhalf_t Bs[BN * BK];
+    // Double buffering: two sets of LDS buffers for prefetching (ping-pong pattern)
+    __shared__ __attribute__((aligned(16))) bhalf_t As[2][BM * BK]; 
+    __shared__ __attribute__((aligned(16))) bhalf_t Bs[2][BN * BK];
     __shared__ __attribute__((aligned(16))) bhalf_t Cs[BN * BM];
    
     uint strideM = threadIdxInWarp;
@@ -197,9 +195,9 @@ batched_matrix_multiplication_matrix_core_64x64x32(uint M, uint N, uint K, uint 
     uint aLoc = threadIdxInWarp * strideAM + strideK * 8 * strideAK;
     uint bLoc = threadIdxInWarp * strideBN + strideK * 8 * strideBK;
 
-    uint asLoc = strideM * BK + strideK * 8; // padded stride to avoid bank conflicts
-    //uint bsLoc = bCol * BK + bRow;
-    uint bsLoc = strideK * 8 + strideN * BK; // transposed, 
+    // Simple linear addressing (no swizzling)
+    uint asLoc = strideM * BK + strideK * 8;
+    uint bsLoc = strideK * 8 + strideN * BK; // transposed 
 
 
     uint aRow = threadCol + warpRow * 32; // 0: [0-31] 1:[0-31] 2:[31-63] 3:[31-63]
@@ -207,57 +205,72 @@ batched_matrix_multiplication_matrix_core_64x64x32(uint M, uint N, uint K, uint 
     uint bRow = threadRow * 4;            // 0, 4  
     uint bCol = threadCol + warpCol * 32; // 0 - 31 32 - 63
     
+    // Simple linear addressing (no swizzling)
     uint aRegLoc = aRow * BK + aCol;
-    uint bRegLoc = bRow + bCol * BK; // transposed,
-    //A += aLoc;
-    //B += bLoc;
+    uint bRegLoc = bRow + bCol * BK; // transposed
 
-    for (int k = 0; k < K; k += BK) {
+    // Prefetch first tile into buffer 0
+    int writeIdx = 0;
+    int readIdx = 0;
+    
+    ASM_DEBUG("; Prefetch first tile");
+    *(bf16x8*)(&As[writeIdx][asLoc]) = *(bf16x8*)(&A[aLoc]);
+    
+    bf16x8 temp;
+    #pragma unroll
+    for (int i = 0; i < 8; ++i) {
+        temp[i] = B[bLoc + i * strideBK];
+    }
+    *(bf16x8*)(&Bs[writeIdx][bsLoc]) = temp;
+    __syncthreads();
+    
+    // Advance pointers for next iteration
+    A += BK;
+    B += BK * strideBK;
 
-        ASM_DEBUG("; Global load to LDS");
-        //ASM_DEBUG("; Load A");
+    // Main loop with double buffering
+    for (int k = BK; k < K; k += BK) {
+        // Swap read/write buffers (ping-pong)
+        readIdx = writeIdx;
+        writeIdx = 1 - writeIdx;
+
+        // Prefetch next tile into write buffer (overlaps with computation)
+        ASM_DEBUG("; Prefetch next tile (async)");
+        *(bf16x8*)(&As[writeIdx][asLoc]) = *(bf16x8*)(&A[aLoc]);
         
-        *(bf16x8*)(&As[asLoc]) = *(bf16x8*)(&A[aLoc]);
-
-        ASM_DEBUG("; Load B");
-        // Gather strided from global B, then store transposed into LDS with padding
-        bf16x8 temp;
+        bf16x8 tempNext;
         #pragma unroll
         for (int i = 0; i < 8; ++i) {
-            temp[i] = B[bLoc + i * strideBK];
-            //Bs[bsLoc + i] = temp[i];
+            tempNext[i] = B[bLoc + i * strideBK];
         }
-        // Keep original non-transposed for optional debugging/comparison
-        *(bf16x8*)(&Bs[bsLoc]) = temp;
-        __syncthreads();
+        *(bf16x8*)(&Bs[writeIdx][bsLoc]) = tempNext;
 
+        // Compute with current tile from read buffer
         for (int i = 0; i < 4; ++i) {
             ASM_DEBUG("; LDS load to reg");
-            a = *(bf16x4*)(&As[i * 8 + aRegLoc]);
-
-            b = *(bf16x4*)(&Bs[i * 8 + bRegLoc]);
+            a = *(bf16x4*)(&As[readIdx][i * 8 + aRegLoc]);
+            b = *(bf16x4*)(&Bs[readIdx][i * 8 + bRegLoc]);
 
             ASM_DEBUG("; MFMA");
-            ///d = __builtin_amdgcn_mfma_f32_32x32x8f16(a, b, d, 0, 0, 0);
-            d = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a, b, d, 0, 0, 0);        
-            //ASM_DEBUG("; Next BK");
+            d = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a, b, d, 0, 0, 0);
         }
+        
+        // Sync before swapping buffers
+        __syncthreads();
             
         A += BK;
         B += BK * strideBK;
-       
-        #if 0
-        if (debug_level == 1 && blockIdx.x == 0 && blockIdx.z == 0 && blockIdx.y == 0 && threadIdx.x == 0) {
-            for (int i = 0; i < 4; ++i) {
-                printf("A: %f, B: %f\n", (float)a[i], (float)b[i]);
-            }
-            for (int i = 0; i < 16; ++i) {
-                 printf("D: %f\n", d[i]);
-            }
-            printf("\n");
-        }
-        #endif
-       
+    }
+    
+    // Process last tile (no prefetch needed)
+    readIdx = writeIdx;
+    for (int i = 0; i < 4; ++i) {
+        ASM_DEBUG("; LDS load to reg (last tile)");
+        a = *(bf16x4*)(&As[readIdx][i * 8 + aRegLoc]);
+        b = *(bf16x4*)(&Bs[readIdx][i * 8 + bRegLoc]);
+
+        ASM_DEBUG("; MFMA (last tile)");
+        d = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a, b, d, 0, 0, 0);
     }
     
     C += (4 * threadRow + warpRow * 32) * N + threadCol + warpCol * 32;
