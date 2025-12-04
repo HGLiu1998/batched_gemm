@@ -149,7 +149,6 @@ test_load_to_global(const bhalf_t* A)
 template <const uint BM = 64, const uint BN = 64, const uint BK = 32>
 __global__ void
 __launch_bounds__(256, 2)
-__attribute__((amdgpu_waves_per_eu(1, 1)))
 batched_matrix_multiplication_matrix_core_64x64x32(uint M, uint N, uint K, uint Batch, const bhalf_t *A, const bhalf_t *B, bhalf_t *C, dim3 strideA, dim3 strideB, dim3 strideC, int debug_level = 1)
 {
     int blockRow = blockIdx.y;
@@ -214,7 +213,7 @@ batched_matrix_multiplication_matrix_core_64x64x32(uint M, uint N, uint K, uint 
     int readIdx = 0;
     
     ASM_DEBUG("; Prefetch first tile");
-    *(bf16x8*)(&As[writeIdx][asLoc]) = *(bf16x8*)(&A[aLoc]);
+    __builtin_amdgcn_global_load_lds((bhalf_t*)(&A[aLoc]), (__attribute__((address_space(3))) bhalf_t*)(&As[writeIdx][asLoc]), sizeof(bf16x8), 0);
     
     bf16x8 temp;
     #pragma unroll
@@ -234,9 +233,8 @@ batched_matrix_multiplication_matrix_core_64x64x32(uint M, uint N, uint K, uint 
         readIdx = writeIdx;
         writeIdx = 1 - writeIdx;
 
-        // Prefetch next tile into write buffer (overlaps with computation)
         ASM_DEBUG("; Prefetch next tile (async)");
-        *(bf16x8*)(&As[writeIdx][asLoc]) = *(bf16x8*)(&A[aLoc]);
+        __builtin_amdgcn_global_load_lds((bhalf_t*)(&A[aLoc]), (__attribute__((address_space(3))) bhalf_t*)(&As[writeIdx][asLoc]), sizeof(bf16x8), 0);
         
         bf16x8 tempNext;
         #pragma unroll
@@ -247,11 +245,9 @@ batched_matrix_multiplication_matrix_core_64x64x32(uint M, uint N, uint K, uint 
 
         // Compute with current tile from read buffer
         for (int i = 0; i < 4; ++i) {
-            ASM_DEBUG("; LDS load to reg");
             a = *(bf16x4*)(&As[readIdx][i * 8 + aRegLoc]);
             b = *(bf16x4*)(&Bs[readIdx][i * 8 + bRegLoc]);
 
-            ASM_DEBUG("; MFMA");
             d = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a, b, d, 0, 0, 0);
         }
         
@@ -276,26 +272,17 @@ batched_matrix_multiplication_matrix_core_64x64x32(uint M, uint N, uint K, uint 
     C += (4 * threadRow + warpRow * 32) * N + threadCol + warpCol * 32;
 
 
-    //ASM_DEBUG(";Before write C");
     #pragma unroll
     for (int i = 0; i < 16; ++i) {
         int rowNum = i % 4;
         int rowIdx = i / 4;
         int idx = (rowNum + rowIdx * 8) * N;
         
-        //__builtin_amdgcn_sched_barrier(0); 
-        //asm volatile("; before cast ");
-        //__builtin_amdgcn_sched_barrier(0);
         bhalf_t temp;
-        //ASM_DEBUG("; static casting");
         temp = static_cast<__bf16>(d[i]);
-        //ASM_DEBUG("; before store C");
         C[idx] = temp;              
-        //ASM_DEBUG("; before store C");
 
     }
-    //ASM_DEBUG(";After write C");
-      
 }
 
 
