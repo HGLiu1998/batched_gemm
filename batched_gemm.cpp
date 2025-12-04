@@ -28,7 +28,7 @@ void randomize_matrix(bhalf_t* mat, int N) {
     for (int i = 0; i < N; ++i) {
         bhalf_t temp = (bhalf_t)((rand() % 5) + 0.01 * (rand() % 5));
         temp = (rand() % 2 == 0) ? temp : temp * (bhalf_t)(-1.);
-        mat[i] = static_cast<bhalf_t>(1);
+        mat[i] = static_cast<bhalf_t>(temp);
     }
 
 }
@@ -98,7 +98,7 @@ int main(int argc, char* argv[])
     
     for (int i = 0; i < warm_ups; ++i) {
         HIP_CHECK_ERROR(hipMemset(dC, 0, sizeC));
-        batched_matrix_multiplication_matrix_core_64x64x4<BM, BN, BK><<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC, strideA, strideB, strideC);
+        batched_matrix_multiplication_matrix_core_64x64x32<<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC, strideA, strideB, strideC);
         //batched_matrix_multiplication_coalesce<<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC);
     }
     
@@ -110,7 +110,7 @@ int main(int argc, char* argv[])
     
     for (int i = 0; i < total_loop; ++i) {
         HIP_CHECK_ERROR(hipMemset(dC, 0, sizeC));
-        batched_matrix_multiplication_matrix_core_64x64x4<BM, BN, BK><<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC, strideA, strideB, strideC);
+        batched_matrix_multiplication_matrix_core_64x64x32<<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC, strideA, strideB, strideC);
         //batched_matrix_multiplication_coalesce<<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC);
     }
 
