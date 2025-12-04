@@ -150,7 +150,7 @@ template <const uint BM = 64, const uint BN = 64, const uint BK = 32>
 __global__ void
 __launch_bounds__(256, 2)
 __attribute__((amdgpu_waves_per_eu(1, 1)))
-batched_matrix_multiplication_matrix_core_64x64x64(uint M, uint N, uint K, uint Batch, const bhalf_t *A, const bhalf_t *B, bhalf_t *C, dim3 strideA, dim3 strideB, dim3 strideC, int debug_level = 1)
+batched_matrix_multiplication_matrix_core_64x64x32(uint M, uint N, uint K, uint Batch, const bhalf_t *A, const bhalf_t *B, bhalf_t *C, dim3 strideA, dim3 strideB, dim3 strideC, int debug_level = 1)
 {
     int blockRow = blockIdx.y;
     int blockCol = blockIdx.x;
@@ -207,8 +207,8 @@ batched_matrix_multiplication_matrix_core_64x64x64(uint M, uint N, uint K, uint 
     uint bRow = threadRow * 4;            // 0, 4  
     uint bCol = threadCol + warpCol * 32; // 0 - 31 32 - 63
     
-    uint asLoc = aRow * BK + aCol;
-    uint bsLoc = bRow + bCol * BK; // transposed,
+    uint aRegLoc = aRow * BK + aCol;
+    uint bRegLoc = bRow + bCol * BK; // transposed,
     //A += aLoc;
     //B += bLoc;
 
@@ -233,9 +233,9 @@ batched_matrix_multiplication_matrix_core_64x64x64(uint M, uint N, uint K, uint 
 
         for (int i = 0; i < 4; ++i) {
             ASM_DEBUG("; LDS load to reg");
-            a = *(bf16x4*)(&As[i * 8 + asLoc]);
+            a = *(bf16x4*)(&As[i * 8 + aRegLoc]);
 
-            b = *(bf16x4*)(&Bs[i * 8 + bsLoc]);
+            b = *(bf16x4*)(&Bs[i * 8 + bRegLoc]);
 
             ASM_DEBUG("; MFMA");
             ///d = __builtin_amdgcn_mfma_f32_32x32x8f16(a, b, d, 0, 0, 0);
