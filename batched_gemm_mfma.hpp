@@ -213,16 +213,10 @@ batched_matrix_multiplication_matrix_core_64x64x32(uint M, uint N, uint K, uint 
     int readIdx = 0;
     
     ASM_DEBUG("; Prefetch first tile");
-    // Build buffer resource descriptor for A
-    asm volatile(
-        "s_load_dwordx2 s[0:1], %1, 0\n"           // Load pointer to s[0:1]
-        "s_mov_b32 s2, 0xffffffff\n"                 // Size = 4GB (max)
-        "s_mov_b32 s3, 0x00027000\n"                 // Format: BUF_DATA_FORMAT_32 | BUF_NUM_FORMAT_FLOAT
-        "buffer_load_dwordx4 %0, %2, s[0:3], 0 offen\n"
-        : "=v"(*(bf16x8*)(&As[writeIdx][asLoc]))
-        : "s"(&A[aLoc]), "v"((uint)0)
-        : "memory", "s0", "s1", "s2", "s3"
-    );
+    asm volatile("flat_load_dwordx4 %0, %1\n" 
+                 : "=v"(*(bf16x8*)(&As[writeIdx][asLoc])) 
+                 : "v"(&A[aLoc]) 
+                 : "memory");
     
     bf16x8 temp;
     #pragma unroll
@@ -243,16 +237,10 @@ batched_matrix_multiplication_matrix_core_64x64x32(uint M, uint N, uint K, uint 
         writeIdx = 1 - writeIdx;
 
         ASM_DEBUG("; Prefetch next tile (async)");
-        // Build buffer resource descriptor for A
-        asm volatile(
-            "s_load_dwordx2 s[4:5], %1, 0\n"           // Load pointer to s[4:5]
-            "s_mov_b32 s6, 0xffffffff\n"                 // Size = 4GB (max)
-            "s_mov_b32 s7, 0x00027000\n"                 // Format: BUF_DATA_FORMAT_32 | BUF_NUM_FORMAT_FLOAT
-            "buffer_load_dwordx4 %0, %2, s[4:7], 0 offen\n"
-            : "=v"(*(bf16x8*)(&As[writeIdx][asLoc]))
-            : "s"(&A[aLoc]), "v"((uint)0)
-            : "memory", "s4", "s5", "s6", "s7"
-        );
+        asm volatile("flat_load_dwordx4 %0, %1\n" 
+                     : "=v"(*(bf16x8*)(&As[writeIdx][asLoc])) 
+                     : "v"(&A[aLoc]) 
+                     : "memory");
         
         bf16x8 tempNext;
         #pragma unroll
