@@ -187,44 +187,47 @@ batched_matrix_multiplication_matrix_core_64x64x32(uint M, uint N, uint K, uint 
     __shared__ __attribute__((aligned(16))) bhalf_t Bs[2][BN * BK];
     __shared__ __attribute__((aligned(16))) bhalf_t Cs[BN * BM];
    
-    uint strideM = threadIdxInWarp;
-    uint strideN = threadIdxInWarp;
-    uint strideK = warpIdx;
-
-    uint aLoc = threadIdxInWarp * strideAM + strideK * 8 * strideAK;
-    uint bLoc = threadIdxInWarp * strideBN + strideK * 8 * strideBK;
-
-    // Simple linear addressing (no swizzling)
-    uint asLoc = strideM * BK + strideK * 8;
-    uint bsLoc = strideK * 8 + strideN * BK; // transposed 
-
-
-    uint aRow = threadCol + warpRow * 32; // 0: [0-31] 1:[0-31] 2:[31-63] 3:[31-63]
-    uint aCol = threadRow * 4;            // 0: [0] 1:[0] 2:[1] 3:[1]
-    uint bRow = threadRow * 4;            // 0, 4  
-    uint bCol = threadCol + warpCol * 32; // 0 - 31 32 - 63
+    // Global load: All 256 threads participate (linear mapping)
+    uint tid = threadIdx.x;           // 0-255
+    uint aLoadOffset = tid * 8;       // Each thread loads 8 bf16
+    uint bLoadOffset = tid * 8;
     
-    // Simple linear addressing (no swizzling)
+    // Global memory addresses for cooperative loading
+    uint aGlobalBase = tid * 8;       // Linear offset for A tile
+    uint bGlobalBase = tid * 8;       // Linear offset for B tile
+    
+    // Compute phase: per-thread indices for MFMA
+    uint warpIdx = threadIdx.x / 64;
+    uint warpCol = warpIdx % 2;
+    uint warpRow = warpIdx / 2;
+    uint threadIdxInWarp = threadIdx.x % 64;
+    uint threadRow = threadIdxInWarp / 32;
+    uint threadCol = threadIdxInWarp % 32;
+
+    uint aRow = threadCol + warpRow * 32; 
+    uint aCol = threadRow * 4;
+    uint bRow = threadRow * 4;
+    uint bCol = threadCol + warpCol * 32;
+    
+    // LDS read indices for MFMA computation
     uint aRegLoc = aRow * BK + aCol;
     uint bRegLoc = bRow + bCol * BK; // transposed
 
-    // Prefetch first tile into buffer 0
+    // Prefetch first tile into buffer 0 - All 256 threads cooperate
     int writeIdx = 0;
     int readIdx = 0;
     
     //ASM_DEBUG("; Prefetch first tile");
-    *(bf16x8*)(&As[writeIdx][asLoc]) = *(bf16x8*)(&A[aLoc]);
+    // Load A: linear cooperative loading (256 threads × 8 bf16 = 2048 elements)
+    *(bf16x8*)(&As[writeIdx][aLoadOffset]) = *(bf16x8*)(&A[aGlobalBase]);
     
-    bf16x8 temp;
-    #pragma unroll
-    for (int i = 0; i < 8; ++i) {
-        temp[i] = B[bLoc + i * strideBK];
-    }
-    *(bf16x8*)(&Bs[writeIdx][bsLoc]) = temp;
+    // Load B: linear cooperative loading
+    *(bf16x8*)(&Bs[writeIdx][bLoadOffset]) = *(bf16x8*)(&B[bGlobalBase]);
+    
     __syncthreads();
     
     // Advance pointers for next iteration
-    A += BK;
+    A += BK * strideAK;
     B += BK * strideBK;
 
     // Main loop with double buffering
@@ -237,9 +240,9 @@ batched_matrix_multiplication_matrix_core_64x64x32(uint M, uint N, uint K, uint 
         a = *(bf16x4*)(&As[readIdx][0 * 8 + aRegLoc]);
         b = *(bf16x4*)(&Bs[readIdx][0 * 8 + bRegLoc]);
         
-        // Start async global load during MFMA (non-blocking)
+        // Start async global load during MFMA (non-blocking) - All 256 threads
         //ASM_DEBUG("; Prefetch next tile A (async, overlapped with MFMA[0])");
-        *(bf16x8*)(&As[writeIdx][asLoc]) = *(bf16x8*)(&A[aLoc]);
+        *(bf16x8*)(&As[writeIdx][aLoadOffset]) = *(bf16x8*)(&A[aGlobalBase]);
         
         // MFMA[0] executes while global load is in flight
         d = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a, b, d, 0, 0, 0);
@@ -248,20 +251,14 @@ batched_matrix_multiplication_matrix_core_64x64x32(uint M, uint N, uint K, uint 
         a = *(bf16x4*)(&As[readIdx][1 * 8 + aRegLoc]);
         b = *(bf16x4*)(&Bs[readIdx][1 * 8 + bRegLoc]);
         
-        // Prefetch B (strided loads)
-        bf16x8 tempNext;
-        #pragma unroll
-        for (int i = 0; i < 8; ++i) {
-            tempNext[i] = B[bLoc + i * strideBK];
-        }
+        // Prefetch B (cooperative loading)
+        *(bf16x8*)(&Bs[writeIdx][bLoadOffset]) = *(bf16x8*)(&B[bGlobalBase]);
         
         d = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a, b, d, 0, 0, 0);
         
-        // Load for MFMA[2] + Store B to LDS
+        // Load for MFMA[2]
         a = *(bf16x4*)(&As[readIdx][2 * 8 + aRegLoc]);
         b = *(bf16x4*)(&Bs[readIdx][2 * 8 + bRegLoc]);
-        
-        *(bf16x8*)(&Bs[writeIdx][bsLoc]) = tempNext;
         
         d = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a, b, d, 0, 0, 0);
         
@@ -274,7 +271,7 @@ batched_matrix_multiplication_matrix_core_64x64x32(uint M, uint N, uint K, uint 
         // Sync before swapping buffers
         __syncthreads();
             
-        A += BK;
+        A += BK * strideAK;
         B += BK * strideBK;
     }
     
