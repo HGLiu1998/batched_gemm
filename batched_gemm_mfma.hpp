@@ -212,11 +212,8 @@ batched_matrix_multiplication_matrix_core_64x64x32(uint M, uint N, uint K, uint 
     int writeIdx = 0;
     int readIdx = 0;
     
-    ASM_DEBUG("; Prefetch first tile");
-    asm volatile("flat_load_dwordx4 %0, %1\n" 
-                 : "=v"(*(bf16x8*)(&As[writeIdx][asLoc])) 
-                 : "v"(&A[aLoc]) 
-                 : "memory");
+    //ASM_DEBUG("; Prefetch first tile");
+    *(bf16x8*)(&As[writeIdx][asLoc]) = *(bf16x8*)(&A[aLoc]);
     
     bf16x8 temp;
     #pragma unroll
@@ -235,27 +232,44 @@ batched_matrix_multiplication_matrix_core_64x64x32(uint M, uint N, uint K, uint 
         // Swap read/write buffers (ping-pong)
         readIdx = writeIdx;
         writeIdx = 1 - writeIdx;
-
-        ASM_DEBUG("; Prefetch next tile (async)");
-        asm volatile("flat_load_dwordx4 %0, %1\n" 
-                     : "=v"(*(bf16x8*)(&As[writeIdx][asLoc])) 
-                     : "v"(&A[aLoc]) 
-                     : "memory");
         
+        // Interleave: Load for MFMA[0] + Start global prefetch for next tile
+        a = *(bf16x4*)(&As[readIdx][0 * 8 + aRegLoc]);
+        b = *(bf16x4*)(&Bs[readIdx][0 * 8 + bRegLoc]);
+        
+        // Start async global load during MFMA (non-blocking)
+        //ASM_DEBUG("; Prefetch next tile A (async, overlapped with MFMA[0])");
+        *(bf16x8*)(&As[writeIdx][asLoc]) = *(bf16x8*)(&A[aLoc]);
+        
+        // MFMA[0] executes while global load is in flight
+        d = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a, b, d, 0, 0, 0);
+        
+        // Load for MFMA[1] + Continue B prefetch
+        a = *(bf16x4*)(&As[readIdx][1 * 8 + aRegLoc]);
+        b = *(bf16x4*)(&Bs[readIdx][1 * 8 + bRegLoc]);
+        
+        // Prefetch B (strided loads)
         bf16x8 tempNext;
         #pragma unroll
         for (int i = 0; i < 8; ++i) {
             tempNext[i] = B[bLoc + i * strideBK];
         }
+        
+        d = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a, b, d, 0, 0, 0);
+        
+        // Load for MFMA[2] + Store B to LDS
+        a = *(bf16x4*)(&As[readIdx][2 * 8 + aRegLoc]);
+        b = *(bf16x4*)(&Bs[readIdx][2 * 8 + bRegLoc]);
+        
         *(bf16x8*)(&Bs[writeIdx][bsLoc]) = tempNext;
-
-        // Compute with current tile from read buffer
-        for (int i = 0; i < 4; ++i) {
-            a = *(bf16x4*)(&As[readIdx][i * 8 + aRegLoc]);
-            b = *(bf16x4*)(&Bs[readIdx][i * 8 + bRegLoc]);
-
-            d = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a, b, d, 0, 0, 0);
-        }
+        
+        d = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a, b, d, 0, 0, 0);
+        
+        // Load for MFMA[3]
+        a = *(bf16x4*)(&As[readIdx][3 * 8 + aRegLoc]);
+        b = *(bf16x4*)(&Bs[readIdx][3 * 8 + bRegLoc]);
+        
+        d = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a, b, d, 0, 0, 0);
         
         // Sync before swapping buffers
         __syncthreads();
@@ -264,16 +278,30 @@ batched_matrix_multiplication_matrix_core_64x64x32(uint M, uint N, uint K, uint 
         B += BK * strideBK;
     }
     
-    // Process last tile (no prefetch needed)
+    // Process last tile (no prefetch needed) - interleave loads with MFMA
     readIdx = writeIdx;
-    for (int i = 0; i < 4; ++i) {
-        ASM_DEBUG("; LDS load to reg (last tile)");
-        a = *(bf16x4*)(&As[readIdx][i * 8 + aRegLoc]);
-        b = *(bf16x4*)(&Bs[readIdx][i * 8 + bRegLoc]);
-
-        ASM_DEBUG("; MFMA (last tile)");
-        d = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a, b, d, 0, 0, 0);
-    }
+    
+    // Load first operands
+    a = *(bf16x4*)(&As[readIdx][0 * 8 + aRegLoc]);
+    b = *(bf16x4*)(&Bs[readIdx][0 * 8 + bRegLoc]);
+    //ASM_DEBUG("; MFMA (last tile) [0]");
+    d = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a, b, d, 0, 0, 0);
+    
+    // Load next during MFMA execution
+    a = *(bf16x4*)(&As[readIdx][1 * 8 + aRegLoc]);
+    b = *(bf16x4*)(&Bs[readIdx][1 * 8 + bRegLoc]);
+    //ASM_DEBUG("; MFMA (last tile) [1]");
+    d = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a, b, d, 0, 0, 0);
+    
+    a = *(bf16x4*)(&As[readIdx][2 * 8 + aRegLoc]);
+    b = *(bf16x4*)(&Bs[readIdx][2 * 8 + bRegLoc]);
+    //ASM_DEBUG("; MFMA (last tile) [2]");
+    d = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a, b, d, 0, 0, 0);
+    
+    a = *(bf16x4*)(&As[readIdx][3 * 8 + aRegLoc]);
+    b = *(bf16x4*)(&Bs[readIdx][3 * 8 + bRegLoc]);
+    //ASM_DEBUG("; MFMA (last tile) [3]");
+    d = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a, b, d, 0, 0, 0);
     
     C += (4 * threadRow + warpRow * 32) * N + threadCol + warpCol * 32;
 
