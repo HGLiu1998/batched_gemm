@@ -184,9 +184,6 @@ batched_matrix_multiplication_matrix_core_128x128x16(uint M, uint N, uint K, uin
     __shared__ __attribute__((aligned(16))) bhalf_t As[2][BM * BK]; 
     __shared__ __attribute__((aligned(16))) bhalf_t Bs[2][BN * BK];
     __shared__ __attribute__((aligned(16))) bhalf_t Cs[BN * BM];
-   
-    uint strideM = threadIdxInWarp;
-    uint strideN = threadIdxInWarp;
 
     //uint aLoc = threadIdxInWarp * strideAM + strideK * 8 * strideAK;
     uint aLoc = (threadIdxInWarp + warpRow * 64) * strideAM + (warpCol * 8) * strideAK;
@@ -249,12 +246,10 @@ batched_matrix_multiplication_matrix_core_128x128x16(uint M, uint N, uint K, uin
             a[1] = *(bf16x4*)(&As[readIdx][i * 8 + 64 * BK + aRegLoc]);
             b[0] = *(bf16x4*)(&Bs[readIdx][i * 8 + bRegLoc]);
             b[1] = *(bf16x4*)(&Bs[readIdx][i * 8 + 64 * BK + bRegLoc]);
-            __builtin_amdgcn_s_setprio(1);
             d[0] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[0], b[0], d[0], 0, 0, 0);
             d[1] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[0], b[1], d[1], 0, 0, 0);
             d[2] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[1], b[0], d[2], 0, 0, 0);
             d[3] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[1], b[1], d[3], 0, 0, 0);
-            __builtin_amdgcn_s_setprio(0);
         }
         
         // Sync before swapping buffers
@@ -344,12 +339,12 @@ batched_matrix_multiplication_matrix_core_64x64x32_2(uint M, uint N, uint K, uin
     uint strideN = threadIdxInWarp;
     uint strideK = warpIdx;
 
-    uint aLoc = threadIdxInWarp * strideAM + strideK * 8 * strideAK;
-    uint bLoc = threadIdxInWarp * strideBN + strideK * 8 * strideBK;
+    uint aLoc = (threadIdxInWarp + warpRow * 64) * strideAM + warpCol * 8 * strideAK;
+    uint bLoc = (threadIdxInWarp + warpCol * 64) * strideBN + warpRow * 8 * strideBK;
 
     // Simple linear addressing (no swizzling)
-    uint asLoc = strideM * BK + strideK * 8;
-    uint bsLoc = strideK * 8 + strideN * BK; // transposed 
+    uint asLoc = (threadIdxInWarp + warpRow * 64) * BK + warpCol * 8 ;
+    uint bsLoc = (threadIdxInWarp + warpCol * 64) * BK + warpRow; // transposed 
 
 
     uint aRow = threadCol + warpRow * 32; // 0: [0-31] 1:[0-31] 2:[31-63] 3:[31-63]
