@@ -121,34 +121,31 @@ batched_matrix_multiplication_matrix_core_128x128(int M, int N, int K, int Batch
     **/
  
 }
-#if 0
 
-__device__ int16x4_t
-llvm_amdgcn_raw_buffer_load_i16x4(int32x4_t srsrc,
-                                  index_t voffset,
-                                  index_t soffset,
-                                  index_t glc_slc) __asm("llvm.amdgcn.raw.buffer.load.v4i16");
-
-__global__ void
-test_load_to_global(const bhalf_t* A)
-{
-    __shared__ bhalf_t As[256];
-    int x = threadIdx.x;
-    
-    std::uintptr_t as_int = reinterpret_cast<std::uintptr_t>(A);
-    std::uintptr_t as_u64 = static_cast<std::uint64_t>(as_int);
-    buffer_resource rc{}
-    i32x4 rsrc = 
-
-    llvm_amdgcn_raw_buffer_load_i16x4(
-
-    
+__device__ inline float4 load_global_vec4_async(const float4* gptr) {
+    float4 v;
+    // Use global_load_dwordx4 which is more cache-friendly than flat_load
+    asm volatile(
+        "global_load_dwordx4 %0, %1, off\n"
+        : "=v"(v) 
+        : "v"(gptr)
+        : "memory"
+    );
+    return v;   
 }
-#endif
+
+__device__ inline void store_shared_vec(uint32_t lds_off, float2 val) {
+    asm volatile(
+        "ds_write_b64 %0, %1\n"
+        :
+        : "v"(lds_off), "v"(val)
+        : "memory"
+    );
+}
 
 template <const uint BM = 64, const uint BN = 64, const uint BK = 32>
 __global__ void
-__launch_bounds__(256, 2)
+__launch_bounds__(512, 2)
 batched_matrix_multiplication_matrix_core_64x64x32_2(uint M, uint N, uint K, uint Batch, const bhalf_t *A, const bhalf_t *B, bhalf_t *C, dim3 strideA, dim3 strideB, dim3 strideC, int debug_level = 1)
 {
     int blockRow = blockIdx.y;
@@ -204,17 +201,16 @@ batched_matrix_multiplication_matrix_core_64x64x32_2(uint M, uint N, uint K, uin
     uint bRow = threadRow * 4;            // 0, 4  
     uint bCol = threadCol + warpCol * 32; // 0 - 31 32 - 63
     
-    // Simple linear addressing (no swizzling)
     uint aRegLoc = aRow * BK + aCol;
     uint bRegLoc = bRow + bCol * BK; // transposed
 
-    // Prefetch first tile into buffer 0
     int writeIdx = 0;
     int readIdx = 0;
     
-    //ASM_DEBUG("; Prefetch first tile");
+    //ASM_DEBUG("; Prefetch A first tile");
     *(bf16x8*)(&As[writeIdx][asLoc]) = *(bf16x8*)(&A[aLoc]);
     
+    //ASM_DEBUG("; Prefetch B first tile");
     bf16x8 temp;
     #pragma unroll
     for (int i = 0; i < 8; ++i) {
@@ -233,29 +229,25 @@ batched_matrix_multiplication_matrix_core_64x64x32_2(uint M, uint N, uint K, uin
         readIdx = writeIdx;
         writeIdx = 1 - writeIdx;
         
-        // Interleave: Load for MFMA[0] + Start global prefetch for next tile
-        
-        // Start async global load during MFMA (non-blocking)
-        //ASM_DEBUG("; Prefetch next tile A (async, overlapped with MFMA[0])");
+        //ASM_DEBUG("; Prefetch A");
         *(bf16x8*)(&As[writeIdx][asLoc]) = *(bf16x8*)(&A[aLoc]);
     
-        // Prefetch B (strided loads)
+        //ASM_DEBUG("; Prefetch B");
         bf16x8 tempNext;
         #pragma unroll
         for (int i = 0; i < 8; ++i) {
             tempNext[i] = B[bLoc + i * strideBK];
-        }
-        
-        
+        } 
         *(bf16x8*)(&Bs[writeIdx][bsLoc]) = tempNext;
         
-        // Load for MFMA[3]
+        //ASM_DEBUG("; MFMA");
         #pragma unroll
         for (int i = 0; i < 4; ++i) {
             a = *(bf16x4*)(&As[readIdx][i * 8 + aRegLoc]);
             b = *(bf16x4*)(&Bs[readIdx][i * 8 + bRegLoc]);
-        
+            __builtin_amdgcn_s_setprio(1);
             d = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a, b, d, 0, 0, 0);
+            __builtin_amdgcn_s_setprio(0);
         }
         
         // Sync before swapping buffers
@@ -268,11 +260,11 @@ batched_matrix_multiplication_matrix_core_64x64x32_2(uint M, uint N, uint K, uin
     // Process last tile (no prefetch needed) - interleave loads with MFMA
     readIdx = writeIdx;
     
-    // Load first operands
+    // Load first operand
+    #pragma unroll
     for (int i = 0; i < 4; ++i) {
         a = *(bf16x4*)(&As[readIdx][i * 8 + aRegLoc]);
         b = *(bf16x4*)(&Bs[readIdx][i * 8 + bRegLoc]);
-    //ASM_DEBUG("; MFMA (last tile) [3]");
         d = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a, b, d, 0, 0, 0);
     }
     C += (4 * threadRow + warpRow * 32) * N + threadCol + warpCol * 32;
