@@ -81,56 +81,88 @@ int main(int argc, char* argv[])
     HIP_CHECK_ERROR(hipMemcpy(dA, A, sizeA, hipMemcpyHostToDevice));
     HIP_CHECK_ERROR(hipMemcpy(dB, B, sizeB, hipMemcpyHostToDevice));
 
-    const uint BM = 64;
-    const uint BN = 64;
-    const uint BK = 8;
+    const uint BM = 128;
+    const uint BN = 128;
     
     dim3 gridDim(CEIL_DIV(N, BN), CEIL_DIV(M, BM), CEIL_DIV(Batch, 1)); // handle 64 x 64 x 1;
     dim3 blockDim(256, 1, 1);
 
+    bool transpose = false;
+
     dim3 strideA(M * K, K, 1);
-    dim3 strideB(N * K, N, 1);
+    dim3 strideB;
+    if (transpose) {    
+        strideB = dim3(N * K, 1, K);
+    } else {
+        strideB = dim3(N * K, N, 1);
+    } 
     //dim3 strideB(N * K, K, 1);
     dim3 strideC(M * N, N, 1);
 
     //dim3 blockDim(32, 32, 1);
     //dim3 gridDim(CEIL_DIV(M, 32), CEIL_DIV(N, 32), CEIL_DIV(Batch, 1));
-    
-    for (int i = 0; i < warm_ups; ++i) {
-        HIP_CHECK_ERROR(hipMemset(dC, 0, sizeC));
-        batched_matrix_multiplication_matrix_core_64x64x32<<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC, strideA, strideB, strideC);
-        //batched_matrix_multiplication_coalesce<<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC);
-    }
-    
-    hipEventCreate(&start);
-    hipEventCreate(&end);
-
-    hipDeviceSynchronize();
-    hipEventRecord(start, NULL);
-    
-    for (int i = 0; i < total_loop; ++i) {
-        HIP_CHECK_ERROR(hipMemset(dC, 0, sizeC));
-        batched_matrix_multiplication_matrix_core_64x64x32<<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC, strideA, strideB, strideC);
-        //batched_matrix_multiplication_coalesce<<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC);
-    }
-
     float elapsed_ms;
-    hipEventRecord(end, NULL);
-    hipEventSynchronize(end);
-    hipDeviceSynchronize();
-    hipEventElapsedTime(&elapsed_ms, start, end);
-    
-    hipEventDestroy(start);
-    hipEventDestroy(end);
 
-    HIP_CHECK_ERROR(hipMemcpy(C, dC, sizeC, hipMemcpyDeviceToHost));
+    if (transpose) {
+        for (int i = 0; i < warm_ups; ++i) {
+            HIP_CHECK_ERROR(hipMemset(dC, 0, sizeC));
+            batched_matrix_multiplication_matrix_core_128x128x16_IGLP<<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC, strideA, strideB, strideC);
 
-    //evaluate
+            //batched_matrix_multiplication_coalesce<<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC);
+        }
         
-    //dim3 testGridDim(CEIL_DIV(M, 32), CEIL_DIV(N, 32), CEIL_DIV(Batch, 1)); 
-    //dim3 testBlockDim(32, 32, 1); 
-    //batched_matrix_multiplication_naive<<<testGridDim, testBlockDim>>>(M, N, K, Batch, dA, dB, dRefC);
-    //HIP_CHECK_ERROR(hipMemcpy(refC, dRefC, sizeC, hipMemcpyDeviceToHost));
+        hipEventCreate(&start);
+        hipEventCreate(&end);
+
+        hipDeviceSynchronize();
+        hipEventRecord(start, NULL);
+        
+        for (int i = 0; i < total_loop; ++i) {
+            HIP_CHECK_ERROR(hipMemset(dC, 0, sizeC));
+            batched_matrix_multiplication_matrix_core_128x128x16_IGLP<<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC, strideA, strideB, strideC);
+            //batched_matrix_multiplication_coalesce<<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC);
+        }
+
+        hipEventRecord(end, NULL);
+        hipEventSynchronize(end);
+        hipDeviceSynchronize();
+        hipEventElapsedTime(&elapsed_ms, start, end);
+        
+        hipEventDestroy(start);
+        hipEventDestroy(end);
+
+        HIP_CHECK_ERROR(hipMemcpy(C, dC, sizeC, hipMemcpyDeviceToHost));
+    } else {
+        for (int i = 0; i < warm_ups; ++i) {
+            HIP_CHECK_ERROR(hipMemset(dC, 0, sizeC));
+            batched_matrix_multiplication_matrix_core_128x128x16<<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC, strideA, strideB, strideC);
+
+            //batched_matrix_multiplication_coalesce<<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC);
+        }
+        
+        hipEventCreate(&start);
+        hipEventCreate(&end);
+
+        hipDeviceSynchronize();
+        hipEventRecord(start, NULL);
+        
+        for (int i = 0; i < total_loop; ++i) {
+            HIP_CHECK_ERROR(hipMemset(dC, 0, sizeC));
+            batched_matrix_multiplication_matrix_core_128x128x16<<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC, strideA, strideB, strideC);
+            //batched_matrix_multiplication_coalesce<<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC);
+        }
+
+        hipEventRecord(end, NULL);
+        hipEventSynchronize(end);
+        hipDeviceSynchronize();
+        hipEventElapsedTime(&elapsed_ms, start, end);
+        
+        hipEventDestroy(start);
+        hipEventDestroy(end);
+
+        HIP_CHECK_ERROR(hipMemcpy(C, dC, sizeC, hipMemcpyDeviceToHost));
+    }
+
 
     size_t flop = (std::size_t)2 * (M * N) * K * Batch;
     float time = elapsed_ms / total_loop;
@@ -138,13 +170,17 @@ int main(int argc, char* argv[])
     float tflops = (float)(flop) / (time * (1E9));
     printf("M: %d, N: %d, K: %d, Batch: %d, TFlops: %.3f\n", M, N, K, Batch, tflops);
 
-    bool pass = true;
+    bool pass = true; 
     for (int i = 0; i < Batch; ++i) {
         for (int j = 0; j < M; ++j) {
             for (int k = 0; k < N; ++k) {
                 float temp = 0.0;
                 for (int kk = 0; kk < K; ++kk) {
-                    temp += (float)A[i * M * K + j * K + kk] * (float)B[i * K * N + kk * N + k];
+                    if (!transpose) {
+                        temp += (float)A[i * M * K + j * K + kk] * (float)B[i * K * N + kk * N + k];
+                    } else {
+                        temp += (float)A[i * M * K + j * K + kk] * (float)B[i * K * N + kk + k * K];
+                    }
                 }
                 bhalf_t result = static_cast<__bf16>(temp);
                 if (fabs(result - C[i * M * N + j * N + k]) > 1e-6) {
