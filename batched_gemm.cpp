@@ -87,7 +87,7 @@ int main(int argc, char* argv[])
     dim3 gridDim(CEIL_DIV(N, BN), CEIL_DIV(M, BM), CEIL_DIV(Batch, 1)); // handle 64 x 64 x 1;
     dim3 blockDim(256, 1, 1);
 
-    bool transpose = false;
+    bool transpose = true;
 
     dim3 strideA(M * K, K, 1);
     dim3 strideB;

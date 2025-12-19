@@ -187,6 +187,7 @@ batched_matrix_multiplication_matrix_core_128x128x16_IGLP(uint M, uint N, uint K
     bf16x4 a[2], b[2];
     floatx16 d[4] = {0};
     
+    //constexpr uint BK_PAD = BK + 4;
     // Double buffering: two sets of LDS buffers for prefetching (ping-pong pattern)
     __shared__ __attribute__((aligned(16))) bhalf_t As[2][BM * BK]; 
     __shared__ __attribute__((aligned(16))) bhalf_t Bs[2][BN * BK];
@@ -224,57 +225,49 @@ batched_matrix_multiplication_matrix_core_128x128x16_IGLP(uint M, uint N, uint K
     // Advance pointers for next iteration
     A += BK;
     B += BK * strideBK;
-    __builtin_amdgcn_sched_barrier(0);
+    //__builtin_amdgcn_sched_barrier(0);
     // Main loop with double buffering
     for (int k = BK; k < K; k += BK) {
         // Swap read/write buffers (ping-pong)
         readIdx = writeIdx;
-        a[0] = *(bf16x4*)(&As[readIdx][aRegLoc]);
-        b[0] = *(bf16x4*)(&Bs[readIdx][bRegLoc]);
-
-        __builtin_amdgcn_s_setprio(1);
-        d[0] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[0], b[0], d[0], 0, 0, 0); //32 - 4
-        __builtin_amdgcn_s_setprio(0);
+        writeIdx = 1 - writeIdx;
         
+        //ASM_DEBUG("; Prefetch A");
+        bf16x8 tempNextA, tempNextB;
+        tempNextA = *(bf16x8*)(&A[aLoc]);
+        *(bf16x8*)(&As[writeIdx][asLoc]) = tempNextA;
+    
+        //ASM_DEBUG("; Prefetch B");
+        tempNextB = *(bf16x8*)(&B[bLoc]);
+        *(bf16x8*)(&Bs[writeIdx][bsLoc]) = tempNextB;
         
-        bf16x8 tempA, tempB;
-        tempA = *(bf16x8*)(&A[aLoc]); //4
-        tempB = *(bf16x8*)(&B[bLoc]); //4
-
-        writeIdx = 1 - writeIdx; //4
-        a[1] = *(bf16x4*)(&As[readIdx][64 * BK + aRegLoc]); //4
-        b[1] = *(bf16x4*)(&Bs[readIdx][64 * BK + bRegLoc]); //4
-
-        __builtin_amdgcn_s_setprio(1);
-        d[1] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[0], b[1], d[1], 0, 0, 0);
-        d[2] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[1], b[0], d[2], 0, 0, 0);
-        __builtin_amdgcn_s_setprio(0);
+        //ASM_DEBUG("; MFMA");
+        #pragma unroll
+        for (int i = 0; i < 2; ++i) { // K iter
+            a[0] = *(bf16x4*)(&As[readIdx][i * 8 + aRegLoc]);
+            a[1] = *(bf16x4*)(&As[readIdx][i * 8 + 64 * BK + aRegLoc]);
+            b[0] = *(bf16x4*)(&Bs[readIdx][i * 8 + bRegLoc]);
+            b[1] = *(bf16x4*)(&Bs[readIdx][i * 8 + 64 * BK + bRegLoc]);
+            d[0] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[0], b[0], d[0], 0, 0, 0);
+            d[1] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[0], b[1], d[1], 0, 0, 0);
+            d[2] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[1], b[0], d[2], 0, 0, 0);
+            d[3] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[1], b[1], d[3], 0, 0, 0);
+        }
         
-        a[0] = *(bf16x4*)(&As[readIdx][8 + aRegLoc]);
-        b[0] = *(bf16x4*)(&Bs[readIdx][8 + bRegLoc]);
-        *(bf16x8*)(&As[writeIdx][asLoc]) = tempA;
-        *(bf16x8*)(&Bs[writeIdx][bsLoc]) = tempB;
-
-        __builtin_amdgcn_s_setprio(1);
-        d[3] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[1], b[1], d[3], 0, 0, 0);
-        d[0] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[0], b[0], d[0], 0, 0, 0); //32 - 4
-        __builtin_amdgcn_s_setprio(0);
-
-        a[1] = *(bf16x4*)(&As[readIdx][8 + 64 * BK + aRegLoc]); //4
-        b[1] = *(bf16x4*)(&Bs[readIdx][8 + 64 * BK + bRegLoc]); //4
-
-        __builtin_amdgcn_s_setprio(1);
-        d[1] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[0], b[1], d[1], 0, 0, 0);
-        d[2] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[1], b[0], d[2], 0, 0, 0);
-        d[3] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[1], b[1], d[3], 0, 0, 0);
-        __builtin_amdgcn_s_setprio(0);
         // Sync before swapping buffers
         __syncthreads();
             
         A += BK;
         B += BK * strideBK;
 
-        __builtin_amdgcn_sched_barrier(0);
+
+        //__builtin_amdgcn_sched_group_barrier(LLVMSchedGroupMask::MFMA, 1, 0); // MFMA
+        //__builtin_amdgcn_sched_group_barrier(LLVMSchedGroupMask::DS_READ, 1, 0); // DS read
+        //__builtin_amdgcn_sched_group_barrier(LLVMSchedGroupMask::DS_WRITE, 1, 0); // DS write
+        //__builtin_amdgcn_sched_group_barrier(LLVMSchedGroupMask::VMEM_READ, 1, 0); // VMEM read
+        //__builtin_amdgcn_sched_group_barrier(LLVMSchedGroupMask::VALU, 4, 0); // VALU
+
+        //__builtin_amdgcn_sched_barrier(0);
     }
     
     // Process last tile (no prefetch needed) - interleave loads with MFMA
@@ -321,7 +314,10 @@ batched_matrix_multiplication_matrix_core_128x128x16(uint M, uint N, uint K, uin
     int blockCol = blockIdx.x;
     int blockBatch = blockIdx.z;
 
-    int warpIdx = threadIdx.x / 64; // 0: [0-63], 1: [64-127], 2: [128-191], 3: [192-255]
+    //int warp_group = threadIdx.x / 256;
+
+    //int warpIdx = (threadIdx.x % 256) / 64; // 0: [0-63], 1: [64-127], 2: [128-191], 3: [192-255]
+    int warpIdx = threadIdx.x / 64;
     int warpCol = warpIdx % 2; // 0, 1, 0, 1
     int warpRow = warpIdx / 2; // 0, 0, 1, 1
 
@@ -375,21 +371,21 @@ batched_matrix_multiplication_matrix_core_128x128x16(uint M, uint N, uint K, uin
     int readIdx = 0;
     
     //ASM_DEBUG("; Prefetch A first tile");
-    *(bf16x8*)(&As[writeIdx][asLoc]) = *(bf16x8*)(&A[aLoc]);
+    bf16x8 tempA, tempB;
+    tempA = *(bf16x8*)(&A[aLoc]);
+    *(bf16x8*)(&As[writeIdx][asLoc]) = tempA;
     
-    //ASM_DEBUG("; Prefetch B first tile");
-    bf16x8 temp;
     #pragma unroll
     for (int i = 0; i < 8; ++i) {
-        temp[i] = B[bLoc + i * strideBK];
+        tempB[i] = B[bLoc + i * strideBK];
     }
-    *(bf16x8*)(&Bs[writeIdx][bsLoc]) = temp;
-    __syncthreads();
+    *(bf16x8*)(&Bs[writeIdx][bsLoc]) = tempB;
     
+    __syncthreads();
     // Advance pointers for next iteration
     A += BK;
     B += BK * strideBK;
-    __builtin_amdgcn_sched_barrier(0);
+    //__builtin_amdgcn_sched_barrier(0);
     // Main loop with double buffering
     for (int k = BK; k < K; k += BK) {
         // Swap read/write buffers (ping-pong)
@@ -397,15 +393,16 @@ batched_matrix_multiplication_matrix_core_128x128x16(uint M, uint N, uint K, uin
         writeIdx = 1 - writeIdx;
         
         //ASM_DEBUG("; Prefetch A");
-        *(bf16x8*)(&As[writeIdx][asLoc]) = *(bf16x8*)(&A[aLoc]);
+        bf16x8 tempNextA, tempNextB;
+        tempNextA = *(bf16x8*)(&A[aLoc]);
+        *(bf16x8*)(&As[writeIdx][asLoc]) = tempNextA;
     
         //ASM_DEBUG("; Prefetch B");
-        bf16x8 tempNext;
         #pragma unroll
         for (int i = 0; i < 8; ++i) {
-            tempNext[i] = B[bLoc + i * strideBK];
+            tempNextB[i] = B[bLoc + i * strideBK];
         } 
-        *(bf16x8*)(&Bs[writeIdx][bsLoc]) = tempNext;
+        *(bf16x8*)(&Bs[writeIdx][bsLoc]) = tempNextB;
         
         //ASM_DEBUG("; MFMA");
         #pragma unroll
@@ -419,21 +416,10 @@ batched_matrix_multiplication_matrix_core_128x128x16(uint M, uint N, uint K, uin
             d[2] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[1], b[0], d[2], 0, 0, 0);
             d[3] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[1], b[1], d[3], 0, 0, 0);
         }
-        
-        // Sync before swapping buffers
-        __syncthreads();
             
+        __syncthreads();
         A += BK;
         B += BK * strideBK;
-
-
-        __builtin_amdgcn_sched_group_barrier(LLVMSchedGroupMask::MFMA, 1, 0); // MFMA
-        __builtin_amdgcn_sched_group_barrier(LLVMSchedGroupMask::DS_READ, 1, 0); // DS read
-        __builtin_amdgcn_sched_group_barrier(LLVMSchedGroupMask::DS_WRITE, 1, 0); // DS write
-        __builtin_amdgcn_sched_group_barrier(LLVMSchedGroupMask::VMEM_READ, 1, 0); // VMEM read
-        __builtin_amdgcn_sched_group_barrier(LLVMSchedGroupMask::VALU, 4, 0); // VALU
-
-        __builtin_amdgcn_sched_barrier(0);
     }
     
     // Process last tile (no prefetch needed) - interleave loads with MFMA
