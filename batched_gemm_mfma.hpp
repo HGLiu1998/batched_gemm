@@ -395,15 +395,14 @@ batched_matrix_multiplication_matrix_core_128x128x16(uint M, uint N, uint K, uin
         //ASM_DEBUG("; Prefetch A");
         bf16x8 tempNextA, tempNextB;
         tempNextA = *(bf16x8*)(&A[aLoc]);
-        *(bf16x8*)(&As[writeIdx][asLoc]) = tempNextA;
-    
+
         //ASM_DEBUG("; Prefetch B");
         #pragma unroll
         for (int i = 0; i < 8; ++i) {
             tempNextB[i] = B[bLoc + i * strideBK];
         } 
-        *(bf16x8*)(&Bs[writeIdx][bsLoc]) = tempNextB;
-        
+
+        __builtin_amdgcn_sched_barrier(0);
         //ASM_DEBUG("; MFMA");
         #pragma unroll
         for (int i = 0; i < 2; ++i) { // K iter
@@ -416,6 +415,11 @@ batched_matrix_multiplication_matrix_core_128x128x16(uint M, uint N, uint K, uin
             d[2] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[1], b[0], d[2], 0, 0, 0);
             d[3] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[1], b[1], d[3], 0, 0, 0);
         }
+
+        __builtin_amdgcn_sched_barrier(0);
+
+        *(bf16x8*)(&As[writeIdx][asLoc]) = tempNextA;
+        *(bf16x8*)(&Bs[writeIdx][bsLoc]) = tempNextB;
             
         __syncthreads();
         A += BK;
@@ -432,12 +436,10 @@ batched_matrix_multiplication_matrix_core_128x128x16(uint M, uint N, uint K, uin
         a[1] = *(bf16x4*)(&As[readIdx][i * 8 + 64 * BK + aRegLoc]);
         b[0] = *(bf16x4*)(&Bs[readIdx][i * 8 + bRegLoc]);
         b[1] = *(bf16x4*)(&Bs[readIdx][i * 8 + 64 * BK + bRegLoc]);
-        __builtin_amdgcn_s_setprio(1);
         d[0] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[0], b[0], d[0], 0, 0, 0);
         d[1] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[0], b[1], d[1], 0, 0, 0);
         d[2] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[1], b[0], d[2], 0, 0, 0);
         d[3] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[1], b[1], d[3], 0, 0, 0);
-        __builtin_amdgcn_s_setprio(0);
     }
         
     C += (4 * threadRow + warpRow * 32) * N + threadCol + warpCol * 32;
