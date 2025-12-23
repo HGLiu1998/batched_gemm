@@ -1,0 +1,3 @@
+Kernel_Name,Count,Sum(ns),Mean(ns),Median(ns),Pct
+"void batched_matrix_multiplication_matrix_core_64x64x4<64u, 64u, 8u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",150,4358035.0703125,29053.567135416666,28900.3828125,83.78956670452105
+__amd_rocclr_fillBufferAligned,151,843131.6640625,5583.653404387417,5514.15625,16.210433295478946

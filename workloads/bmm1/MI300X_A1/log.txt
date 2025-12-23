@@ -1,0 +1,190 @@
+rocprofv3 interface is deprecated and will be removed in a future release.
+Incomplete class definition for gfx942. Expecting populated vbios but detected None.
+Missing specs fields for gfx942
+Rocprofiler-Compute version: 3.3.0
+Profiler choice: rocprofv3
+Path: /workspace/batched_gemm/workloads/bmm1/MI300X_A1
+Target: MI300X_A1
+Command: ./batched_gemm1
+Kernel Selection: None
+Dispatch Selection: None
+Filtered sections: All
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Collecting Performance Counters
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[Run 1/13][Approximate profiling time left: pending first measurement...]
+[profiling] Current input file: /workspace/batched_gemm/workloads/bmm1/MI300X_A1/perfmon/SQC_DCACHE_INFLIGHT_LEVEL.txt
+   |-> [rocprofv3] W20251202 10:04:41.865114 139969985453824 simple_timer.cpp:55] [rocprofv3] tool initialization ::     0.276686 sec
+   |-> [rocprofv3] W20251202 10:04:41.865356 139969985453824 simple_timer.cpp:55] [rocprofv3] './batched_gemm1' ::     0.000000 sec
+   |-> [rocprofv3] W20251202 10:04:42.470365 139969985453824 tool.cpp:2420] HSA version 8.19.0 initialized (instance=0)
+   |-> [rocprofv3] W20251202 10:04:43.649231 139969985453824 simple_timer.cpp:55] [rocprofv3] './batched_gemm1' ::     1.783876 sec
+   |-> [rocprofv3] E20251202 10:04:43.657762 139969985453824 output_stream.cpp:111] Opened result file: /workspace/batched_gemm/workloads/bmm1/MI300X_A1/out/pmc_1/1b0d893a303b/89_kernel_trace.csv
+   |-> [rocprofv3] E20251202 10:04:43.669134 139969985453824 output_stream.cpp:111] Opened result file: /workspace/batched_gemm/workloads/bmm1/MI300X_A1/out/pmc_1/1b0d893a303b/89_counter_collection.csv
+   |-> [rocprofv3] E20251202 10:04:43.724356 139969985453824 output_stream.cpp:111] Opened result file: /workspace/batched_gemm/workloads/bmm1/MI300X_A1/out/pmc_1/1b0d893a303b/89_agent_info.csv
+   |-> [rocprofv3] W20251202 10:04:43.726972 139969985453824 simple_timer.cpp:55] [rocprofv3] output generation ::     0.075371 sec
+   |-> [rocprofv3] W20251202 10:04:43.727162 139969985453824 simple_timer.cpp:55] [rocprofv3] tool finalization ::     0.075791 sec
+   |-> [rocprofv3] Start
+   |-> [rocprofv3] ELAPSED TIME: 0.936
+[Run 2/13][Approximate profiling time left: 49 seconds]...
+[profiling] Current input file: /workspace/batched_gemm/workloads/bmm1/MI300X_A1/perfmon/SQC_ICACHE_INFLIGHT_LEVEL.txt
+   |-> [rocprofv3] W20251202 10:04:46.210073 139623733927680 simple_timer.cpp:55] [rocprofv3] tool initialization ::     0.233427 sec
+   |-> [rocprofv3] W20251202 10:04:46.210366 139623733927680 simple_timer.cpp:55] [rocprofv3] './batched_gemm1' ::     0.000000 sec
+   |-> [rocprofv3] W20251202 10:04:46.810969 139623733927680 tool.cpp:2420] HSA version 8.19.0 initialized (instance=0)
+   |-> [rocprofv3] W20251202 10:04:47.908102 139623733927680 simple_timer.cpp:55] [rocprofv3] './batched_gemm1' ::     1.697736 sec
+   |-> [rocprofv3] E20251202 10:04:47.917086 139623733927680 output_stream.cpp:111] Opened result file: /workspace/batched_gemm/workloads/bmm1/MI300X_A1/out/pmc_1/1b0d893a303b/97_kernel_trace.csv
+   |-> [rocprofv3] E20251202 10:04:47.927906 139623733927680 output_stream.cpp:111] Opened result file: /workspace/batched_gemm/workloads/bmm1/MI300X_A1/out/pmc_1/1b0d893a303b/97_counter_collection.csv
+   |-> [rocprofv3] E20251202 10:04:47.982692 139623733927680 output_stream.cpp:111] Opened result file: /workspace/batched_gemm/workloads/bmm1/MI300X_A1/out/pmc_1/1b0d893a303b/97_agent_info.csv
+   |-> [rocprofv3] W20251202 10:04:47.985273 139623733927680 simple_timer.cpp:55] [rocprofv3] output generation ::     0.074812 sec
+   |-> [rocprofv3] W20251202 10:04:47.985459 139623733927680 simple_timer.cpp:55] [rocprofv3] tool finalization ::     0.075236 sec
+   |-> [rocprofv3] Start
+   |-> [rocprofv3] ELAPSED TIME: 0.936
+[Run 3/13][Approximate profiling time left: 44 seconds]...
+[profiling] Current input file: /workspace/batched_gemm/workloads/bmm1/MI300X_A1/perfmon/SQ_IFETCH_LEVEL.txt
+   |-> [rocprofv3] W20251202 10:04:50.530815 139881193238272 simple_timer.cpp:55] [rocprofv3] tool initialization ::     0.247659 sec
+   |-> [rocprofv3] W20251202 10:04:50.531085 139881193238272 simple_timer.cpp:55] [rocprofv3] './batched_gemm1' ::     0.000000 sec
+   |-> [rocprofv3] W20251202 10:04:51.136793 139881193238272 tool.cpp:2420] HSA version 8.19.0 initialized (instance=0)
+   |-> [rocprofv3] W20251202 10:04:52.280893 139881193238272 simple_timer.cpp:55] [rocprofv3] './batched_gemm1' ::     1.749808 sec
+   |-> [rocprofv3] E20251202 10:04:52.288414 139881193238272 output_stream.cpp:111] Opened result file: /workspace/batched_gemm/workloads/bmm1/MI300X_A1/out/pmc_1/1b0d893a303b/105_kernel_trace.csv
+   |-> [rocprofv3] E20251202 10:04:52.299241 139881193238272 output_stream.cpp:111] Opened result file: /workspace/batched_gemm/workloads/bmm1/MI300X_A1/out/pmc_1/1b0d893a303b/105_counter_collection.csv
+   |-> [rocprofv3] E20251202 10:04:52.389638 139881193238272 output_stream.cpp:111] Opened result file: /workspace/batched_gemm/workloads/bmm1/MI300X_A1/out/pmc_1/1b0d893a303b/105_agent_info.csv
+   |-> [rocprofv3] W20251202 10:04:52.392238 139881193238272 simple_timer.cpp:55] [rocprofv3] output generation ::     0.110129 sec
+   |-> [rocprofv3] W20251202 10:04:52.392491 139881193238272 simple_timer.cpp:55] [rocprofv3] tool finalization ::     0.110440 sec
+   |-> [rocprofv3] Start
+   |-> [rocprofv3] ELAPSED TIME: 0.908
+[Run 4/13][Approximate profiling time left: 39 seconds]...
+[profiling] Current input file: /workspace/batched_gemm/workloads/bmm1/MI300X_A1/perfmon/SQ_INST_LEVEL_LDS.txt
+   |-> [rocprofv3] W20251202 10:04:55.029600 139893072191232 simple_timer.cpp:55] [rocprofv3] tool initialization ::     0.245610 sec
+   |-> [rocprofv3] W20251202 10:04:55.029895 139893072191232 simple_timer.cpp:55] [rocprofv3] './batched_gemm1' ::     0.000000 sec
+   |-> [rocprofv3] W20251202 10:04:55.640383 139893072191232 tool.cpp:2420] HSA version 8.19.0 initialized (instance=0)
+   |-> [rocprofv3] W20251202 10:04:56.784406 139893072191232 simple_timer.cpp:55] [rocprofv3] './batched_gemm1' ::     1.754511 sec
+   |-> [rocprofv3] E20251202 10:04:56.793055 139893072191232 output_stream.cpp:111] Opened result file: /workspace/batched_gemm/workloads/bmm1/MI300X_A1/out/pmc_1/1b0d893a303b/113_kernel_trace.csv
+   |-> [rocprofv3] E20251202 10:04:56.805241 139893072191232 output_stream.cpp:111] Opened result file: /workspace/batched_gemm/workloads/bmm1/MI300X_A1/out/pmc_1/1b0d893a303b/113_counter_collection.csv
+   |-> [rocprofv3] E20251202 10:04:56.898325 139893072191232 output_stream.cpp:111] Opened result file: /workspace/batched_gemm/workloads/bmm1/MI300X_A1/out/pmc_1/1b0d893a303b/113_agent_info.csv
+   |-> [rocprofv3] W20251202 10:04:56.901027 139893072191232 simple_timer.cpp:55] [rocprofv3] output generation ::     0.114141 sec
+   |-> [rocprofv3] W20251202 10:04:56.901282 139893072191232 simple_timer.cpp:55] [rocprofv3] tool finalization ::     0.114663 sec
+   |-> [rocprofv3] Start
+   |-> [rocprofv3] ELAPSED TIME: 0.874
+[Run 5/13][Approximate profiling time left: 35 seconds]...
+[profiling] Current input file: /workspace/batched_gemm/workloads/bmm1/MI300X_A1/perfmon/SQ_INST_LEVEL_SMEM.txt
+   |-> [rocprofv3] W20251202 10:04:59.523181 139766282120960 simple_timer.cpp:55] [rocprofv3] tool initialization ::     0.227412 sec
+   |-> [rocprofv3] W20251202 10:04:59.523487 139766282120960 simple_timer.cpp:55] [rocprofv3] './batched_gemm1' ::     0.000000 sec
+   |-> [rocprofv3] W20251202 10:05:00.128262 139766282120960 tool.cpp:2420] HSA version 8.19.0 initialized (instance=0)
+   |-> [rocprofv3] W20251202 10:05:01.192204 139766282120960 simple_timer.cpp:55] [rocprofv3] './batched_gemm1' ::     1.668717 sec
+   |-> [rocprofv3] E20251202 10:05:01.199559 139766282120960 output_stream.cpp:111] Opened result file: /workspace/batched_gemm/workloads/bmm1/MI300X_A1/out/pmc_1/1b0d893a303b/121_kernel_trace.csv
+   |-> [rocprofv3] E20251202 10:05:01.211692 139766282120960 output_stream.cpp:111] Opened result file: /workspace/batched_gemm/workloads/bmm1/MI300X_A1/out/pmc_1/1b0d893a303b/121_counter_collection.csv
+   |-> [rocprofv3] E20251202 10:05:01.264392 139766282120960 output_stream.cpp:111] Opened result file: /workspace/batched_gemm/workloads/bmm1/MI300X_A1/out/pmc_1/1b0d893a303b/121_agent_info.csv
+   |-> [rocprofv3] W20251202 10:05:01.267206 139766282120960 simple_timer.cpp:55] [rocprofv3] output generation ::     0.073988 sec
+   |-> [rocprofv3] W20251202 10:05:01.267391 139766282120960 simple_timer.cpp:55] [rocprofv3] tool finalization ::     0.074198 sec
+   |-> [rocprofv3] Start
+   |-> [rocprofv3] ELAPSED TIME: 0.766
+[Run 6/13][Approximate profiling time left: 30 seconds]...
+[profiling] Current input file: /workspace/batched_gemm/workloads/bmm1/MI300X_A1/perfmon/SQ_INST_LEVEL_VMEM.txt
+   |-> [rocprofv3] W20251202 10:05:03.749331 139640836255488 simple_timer.cpp:55] [rocprofv3] tool initialization ::     0.234684 sec
+   |-> [rocprofv3] W20251202 10:05:03.749649 139640836255488 simple_timer.cpp:55] [rocprofv3] './batched_gemm1' ::     0.000000 sec
+   |-> [rocprofv3] W20251202 10:05:04.328696 139640836255488 tool.cpp:2420] HSA version 8.19.0 initialized (instance=0)
+   |-> [rocprofv3] W20251202 10:05:05.401450 139640836255488 simple_timer.cpp:55] [rocprofv3] './batched_gemm1' ::     1.651802 sec
+   |-> [rocprofv3] E20251202 10:05:05.408617 139640836255488 output_stream.cpp:111] Opened result file: /workspace/batched_gemm/workloads/bmm1/MI300X_A1/out/pmc_1/1b0d893a303b/129_kernel_trace.csv
+   |-> [rocprofv3] E20251202 10:05:05.420179 139640836255488 output_stream.cpp:111] Opened result file: /workspace/batched_gemm/workloads/bmm1/MI300X_A1/out/pmc_1/1b0d893a303b/129_counter_collection.csv
+   |-> [rocprofv3] E20251202 10:05:05.473775 139640836255488 output_stream.cpp:111] Opened result file: /workspace/batched_gemm/workloads/bmm1/MI300X_A1/out/pmc_1/1b0d893a303b/129_agent_info.csv
+   |-> [rocprofv3] W20251202 10:05:05.476422 139640836255488 simple_timer.cpp:55] [rocprofv3] output generation ::     0.073964 sec
+   |-> [rocprofv3] W20251202 10:05:05.476598 139640836255488 simple_timer.cpp:55] [rocprofv3] tool finalization ::     0.074166 sec
+   |-> [rocprofv3] Start
+   |-> [rocprofv3] ELAPSED TIME: 0.734
+[Run 7/13][Approximate profiling time left: 26 seconds]...
+[profiling] Current input file: /workspace/batched_gemm/workloads/bmm1/MI300X_A1/perfmon/SQ_LEVEL_WAVES.txt
+   |-> [rocprofv3] W20251202 10:05:07.963677 140178158141184 simple_timer.cpp:55] [rocprofv3] tool initialization ::     0.232083 sec
+   |-> [rocprofv3] W20251202 10:05:07.963974 140178158141184 simple_timer.cpp:55] [rocprofv3] './batched_gemm1' ::     0.000000 sec
+   |-> [rocprofv3] W20251202 10:05:08.572764 140178158141184 tool.cpp:2420] HSA version 8.19.0 initialized (instance=0)
+   |-> [rocprofv3] W20251202 10:05:09.596363 140178158141184 simple_timer.cpp:55] [rocprofv3] './batched_gemm1' ::     1.632390 sec
+   |-> [rocprofv3] E20251202 10:05:09.605583 140178158141184 output_stream.cpp:111] Opened result file: /workspace/batched_gemm/workloads/bmm1/MI300X_A1/out/pmc_1/1b0d893a303b/137_kernel_trace.csv
+   |-> [rocprofv3] E20251202 10:05:09.617096 140178158141184 output_stream.cpp:111] Opened result file: /workspace/batched_gemm/workloads/bmm1/MI300X_A1/out/pmc_1/1b0d893a303b/137_counter_collection.csv
+   |-> [rocprofv3] E20251202 10:05:09.669282 140178158141184 output_stream.cpp:111] Opened result file: /workspace/batched_gemm/workloads/bmm1/MI300X_A1/out/pmc_1/1b0d893a303b/137_agent_info.csv
+   |-> [rocprofv3] W20251202 10:05:09.671985 140178158141184 simple_timer.cpp:55] [rocprofv3] output generation ::     0.073223 sec
+   |-> [rocprofv3] W20251202 10:05:09.672193 140178158141184 simple_timer.cpp:55] [rocprofv3] tool finalization ::     0.073659 sec
+   |-> [rocprofv3] Start
+   |-> [rocprofv3] ELAPSED TIME: 0.730
+[Run 8/13][Approximate profiling time left: 21 seconds]...
+[profiling] Current input file: /workspace/batched_gemm/workloads/bmm1/MI300X_A1/perfmon/pmc_perf_0.txt
+   |-> [rocprofv3] W20251202 10:05:12.134707 140563357667072 simple_timer.cpp:55] [rocprofv3] tool initialization ::     0.225584 sec
+   |-> [rocprofv3] W20251202 10:05:12.134997 140563357667072 simple_timer.cpp:55] [rocprofv3] './batched_gemm1' ::     0.000000 sec
+   |-> [rocprofv3] W20251202 10:05:12.737127 140563357667072 tool.cpp:2420] HSA version 8.19.0 initialized (instance=0)
+   |-> [rocprofv3] W20251202 10:05:13.797562 140563357667072 simple_timer.cpp:55] [rocprofv3] './batched_gemm1' ::     1.662565 sec
+   |-> [rocprofv3] E20251202 10:05:13.806332 140563357667072 output_stream.cpp:111] Opened result file: /workspace/batched_gemm/workloads/bmm1/MI300X_A1/out/pmc_1/1b0d893a303b/145_kernel_trace.csv
+   |-> [rocprofv3] E20251202 10:05:13.817711 140563357667072 output_stream.cpp:111] Opened result file: /workspace/batched_gemm/workloads/bmm1/MI300X_A1/out/pmc_1/1b0d893a303b/145_counter_collection.csv
+   |-> [rocprofv3] E20251202 10:05:13.869563 140563357667072 output_stream.cpp:111] Opened result file: /workspace/batched_gemm/workloads/bmm1/MI300X_A1/out/pmc_1/1b0d893a303b/145_agent_info.csv
+   |-> [rocprofv3] W20251202 10:05:13.872204 140563357667072 simple_timer.cpp:55] [rocprofv3] output generation ::     0.072180 sec
+   |-> [rocprofv3] W20251202 10:05:13.872377 140563357667072 simple_timer.cpp:55] [rocprofv3] tool finalization ::     0.072581 sec
+   |-> [rocprofv3] Start
+   |-> [rocprofv3] ELAPSED TIME: 0.733
+[Run 9/13][Approximate profiling time left: 17 seconds]...
+[profiling] Current input file: /workspace/batched_gemm/workloads/bmm1/MI300X_A1/perfmon/pmc_perf_1.txt
+   |-> [rocprofv3] W20251202 10:05:16.353243 140178761309952 simple_timer.cpp:55] [rocprofv3] tool initialization ::     0.226282 sec
+   |-> [rocprofv3] W20251202 10:05:16.353504 140178761309952 simple_timer.cpp:55] [rocprofv3] './batched_gemm1' ::     0.000000 sec
+   |-> [rocprofv3] W20251202 10:05:16.953862 140178761309952 tool.cpp:2420] HSA version 8.19.0 initialized (instance=0)
+   |-> [rocprofv3] W20251202 10:05:17.988153 140178761309952 simple_timer.cpp:55] [rocprofv3] './batched_gemm1' ::     1.634649 sec
+   |-> [rocprofv3] E20251202 10:05:17.997033 140178761309952 output_stream.cpp:111] Opened result file: /workspace/batched_gemm/workloads/bmm1/MI300X_A1/out/pmc_1/1b0d893a303b/153_kernel_trace.csv
+   |-> [rocprofv3] E20251202 10:05:18.008568 140178761309952 output_stream.cpp:111] Opened result file: /workspace/batched_gemm/workloads/bmm1/MI300X_A1/out/pmc_1/1b0d893a303b/153_counter_collection.csv
+   |-> [rocprofv3] E20251202 10:05:18.059276 140178761309952 output_stream.cpp:111] Opened result file: /workspace/batched_gemm/workloads/bmm1/MI300X_A1/out/pmc_1/1b0d893a303b/153_agent_info.csv
+   |-> [rocprofv3] W20251202 10:05:18.062058 140178761309952 simple_timer.cpp:55] [rocprofv3] output generation ::     0.071577 sec
+   |-> [rocprofv3] W20251202 10:05:18.062214 140178761309952 simple_timer.cpp:55] [rocprofv3] tool finalization ::     0.071962 sec
+   |-> [rocprofv3] Start
+   |-> [rocprofv3] ELAPSED TIME: 0.497
+[Run 10/13][Approximate profiling time left: 12 seconds]...
+[profiling] Current input file: /workspace/batched_gemm/workloads/bmm1/MI300X_A1/perfmon/pmc_perf_2.txt
+   |-> [rocprofv3] W20251202 10:05:20.506251 139676236525312 simple_timer.cpp:55] [rocprofv3] tool initialization ::     0.225903 sec
+   |-> [rocprofv3] W20251202 10:05:20.506506 139676236525312 simple_timer.cpp:55] [rocprofv3] './batched_gemm1' ::     0.000000 sec
+   |-> [rocprofv3] W20251202 10:05:21.105523 139676236525312 tool.cpp:2420] HSA version 8.19.0 initialized (instance=0)
+   |-> [rocprofv3] W20251202 10:05:22.056707 139676236525312 simple_timer.cpp:55] [rocprofv3] './batched_gemm1' ::     1.550201 sec
+   |-> [rocprofv3] E20251202 10:05:22.064075 139676236525312 output_stream.cpp:111] Opened result file: /workspace/batched_gemm/workloads/bmm1/MI300X_A1/out/pmc_1/1b0d893a303b/161_kernel_trace.csv
+   |-> [rocprofv3] E20251202 10:05:22.075868 139676236525312 output_stream.cpp:111] Opened result file: /workspace/batched_gemm/workloads/bmm1/MI300X_A1/out/pmc_1/1b0d893a303b/161_counter_collection.csv
+   |-> [rocprofv3] E20251202 10:05:22.125849 139676236525312 output_stream.cpp:111] Opened result file: /workspace/batched_gemm/workloads/bmm1/MI300X_A1/out/pmc_1/1b0d893a303b/161_agent_info.csv
+   |-> [rocprofv3] W20251202 10:05:22.128715 139676236525312 simple_timer.cpp:55] [rocprofv3] output generation ::     0.071085 sec
+   |-> [rocprofv3] W20251202 10:05:22.128873 139676236525312 simple_timer.cpp:55] [rocprofv3] tool finalization ::     0.071278 sec
+   |-> [rocprofv3] Start
+   |-> [rocprofv3] ELAPSED TIME: 0.262
+[Run 11/13][Approximate profiling time left: 8 seconds]...
+[profiling] Current input file: /workspace/batched_gemm/workloads/bmm1/MI300X_A1/perfmon/pmc_perf_3.txt
+   |-> [rocprofv3] W20251202 10:05:24.593622 140002351615744 simple_timer.cpp:55] [rocprofv3] tool initialization ::     0.229262 sec
+   |-> [rocprofv3] W20251202 10:05:24.593877 140002351615744 simple_timer.cpp:55] [rocprofv3] './batched_gemm1' ::     0.000000 sec
+   |-> [rocprofv3] W20251202 10:05:25.201564 140002351615744 tool.cpp:2420] HSA version 8.19.0 initialized (instance=0)
+   |-> [rocprofv3] W20251202 10:05:26.159113 140002351615744 simple_timer.cpp:55] [rocprofv3] './batched_gemm1' ::     1.565236 sec
+   |-> [rocprofv3] E20251202 10:05:26.168395 140002351615744 output_stream.cpp:111] Opened result file: /workspace/batched_gemm/workloads/bmm1/MI300X_A1/out/pmc_1/1b0d893a303b/169_kernel_trace.csv
+   |-> [rocprofv3] E20251202 10:05:26.179910 140002351615744 output_stream.cpp:111] Opened result file: /workspace/batched_gemm/workloads/bmm1/MI300X_A1/out/pmc_1/1b0d893a303b/169_counter_collection.csv
+   |-> [rocprofv3] E20251202 10:05:26.227765 140002351615744 output_stream.cpp:111] Opened result file: /workspace/batched_gemm/workloads/bmm1/MI300X_A1/out/pmc_1/1b0d893a303b/169_agent_info.csv
+   |-> [rocprofv3] W20251202 10:05:26.230764 140002351615744 simple_timer.cpp:55] [rocprofv3] output generation ::     0.069320 sec
+   |-> [rocprofv3] W20251202 10:05:26.230957 140002351615744 simple_timer.cpp:55] [rocprofv3] tool finalization ::     0.069741 sec
+   |-> [rocprofv3] Start
+   |-> [rocprofv3] ELAPSED TIME: 0.262
+[Run 12/13][Approximate profiling time left: 4 seconds]...
+[profiling] Current input file: /workspace/batched_gemm/workloads/bmm1/MI300X_A1/perfmon/pmc_perf_4.txt
+   |-> [rocprofv3] W20251202 10:05:28.675283 140659725790976 simple_timer.cpp:55] [rocprofv3] tool initialization ::     0.227749 sec
+   |-> [rocprofv3] W20251202 10:05:28.675537 140659725790976 simple_timer.cpp:55] [rocprofv3] './batched_gemm1' ::     0.000000 sec
+   |-> [rocprofv3] W20251202 10:05:29.295660 140659725790976 tool.cpp:2420] HSA version 8.19.0 initialized (instance=0)
+   |-> [rocprofv3] W20251202 10:05:30.273740 140659725790976 simple_timer.cpp:55] [rocprofv3] './batched_gemm1' ::     1.598203 sec
+   |-> [rocprofv3] E20251202 10:05:30.281121 140659725790976 output_stream.cpp:111] Opened result file: /workspace/batched_gemm/workloads/bmm1/MI300X_A1/out/pmc_1/1b0d893a303b/177_kernel_trace.csv
+   |-> [rocprofv3] E20251202 10:05:30.292469 140659725790976 output_stream.cpp:111] Opened result file: /workspace/batched_gemm/workloads/bmm1/MI300X_A1/out/pmc_1/1b0d893a303b/177_counter_collection.csv
+   |-> [rocprofv3] E20251202 10:05:30.341849 140659725790976 output_stream.cpp:111] Opened result file: /workspace/batched_gemm/workloads/bmm1/MI300X_A1/out/pmc_1/1b0d893a303b/177_agent_info.csv
+   |-> [rocprofv3] W20251202 10:05:30.344646 140659725790976 simple_timer.cpp:55] [rocprofv3] output generation ::     0.070072 sec
+   |-> [rocprofv3] W20251202 10:05:30.344772 140659725790976 simple_timer.cpp:55] [rocprofv3] tool finalization ::     0.070221 sec
+   |-> [rocprofv3] Start
+   |-> [rocprofv3] ELAPSED TIME: 0.211
+[Run 13/13][Approximate profiling time left: 0 seconds]...
+[profiling] Current input file: /workspace/batched_gemm/workloads/bmm1/MI300X_A1/perfmon/pmc_perf_5.txt
+   |-> [rocprofv3] W20251202 10:05:32.731186 140172025691904 simple_timer.cpp:55] [rocprofv3] tool initialization ::     0.209687 sec
+   |-> [rocprofv3] W20251202 10:05:32.731408 140172025691904 simple_timer.cpp:55] [rocprofv3] './batched_gemm1' ::     0.000000 sec
+   |-> [rocprofv3] W20251202 10:05:33.386937 140172025691904 tool.cpp:2420] HSA version 8.19.0 initialized (instance=0)
+   |-> [rocprofv3] W20251202 10:05:34.472041 140172025691904 simple_timer.cpp:55] [rocprofv3] './batched_gemm1' ::     1.740633 sec
+   |-> [rocprofv3] E20251202 10:05:34.480374 140172025691904 output_stream.cpp:111] Opened result file: /workspace/batched_gemm/workloads/bmm1/MI300X_A1/out/pmc_1/1b0d893a303b/185_kernel_trace.csv
+   |-> [rocprofv3] E20251202 10:05:34.491894 140172025691904 output_stream.cpp:111] Opened result file: /workspace/batched_gemm/workloads/bmm1/MI300X_A1/out/pmc_1/1b0d893a303b/185_counter_collection.csv
+   |-> [rocprofv3] E20251202 10:05:34.498334 140172025691904 output_stream.cpp:111] Opened result file: /workspace/batched_gemm/workloads/bmm1/MI300X_A1/out/pmc_1/1b0d893a303b/185_agent_info.csv
+   |-> [rocprofv3] W20251202 10:05:34.501030 140172025691904 simple_timer.cpp:55] [rocprofv3] output generation ::     0.026783 sec
+   |-> [rocprofv3] W20251202 10:05:34.501082 140172025691904 simple_timer.cpp:55] [rocprofv3] tool finalization ::     0.026875 sec
+   |-> [rocprofv3] Start
+   |-> [rocprofv3] ELAPSED TIME: 0.133
+[roofline] Checking for roofline.csv in /workspace/batched_gemm/workloads/bmm1/MI300X_A1
+[roofline] No roofline data found. Generating...
+[roofline] Empirical Roofline PDFs saved!
+[roofline] Checking for roofline.csv in /workspace/batched_gemm/workloads/bmm1/MI300X_A1
+[roofline] Empirical Roofline PDFs saved!

@@ -1,0 +1,302 @@
+Dispatch_ID,Kernel_Name,GPU_ID
+0,__amd_rocclr_fillBufferAligned,0
+1,__amd_rocclr_fillBufferAligned,0
+2,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+3,__amd_rocclr_fillBufferAligned,0
+4,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+5,__amd_rocclr_fillBufferAligned,0
+6,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+7,__amd_rocclr_fillBufferAligned,0
+8,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+9,__amd_rocclr_fillBufferAligned,0
+10,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+11,__amd_rocclr_fillBufferAligned,0
+12,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+13,__amd_rocclr_fillBufferAligned,0
+14,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+15,__amd_rocclr_fillBufferAligned,0
+16,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+17,__amd_rocclr_fillBufferAligned,0
+18,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+19,__amd_rocclr_fillBufferAligned,0
+20,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+21,__amd_rocclr_fillBufferAligned,0
+22,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+23,__amd_rocclr_fillBufferAligned,0
+24,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+25,__amd_rocclr_fillBufferAligned,0
+26,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+27,__amd_rocclr_fillBufferAligned,0
+28,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+29,__amd_rocclr_fillBufferAligned,0
+30,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+31,__amd_rocclr_fillBufferAligned,0
+32,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+33,__amd_rocclr_fillBufferAligned,0
+34,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+35,__amd_rocclr_fillBufferAligned,0
+36,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+37,__amd_rocclr_fillBufferAligned,0
+38,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+39,__amd_rocclr_fillBufferAligned,0
+40,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+41,__amd_rocclr_fillBufferAligned,0
+42,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+43,__amd_rocclr_fillBufferAligned,0
+44,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+45,__amd_rocclr_fillBufferAligned,0
+46,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+47,__amd_rocclr_fillBufferAligned,0
+48,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+49,__amd_rocclr_fillBufferAligned,0
+50,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+51,__amd_rocclr_fillBufferAligned,0
+52,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+53,__amd_rocclr_fillBufferAligned,0
+54,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+55,__amd_rocclr_fillBufferAligned,0
+56,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+57,__amd_rocclr_fillBufferAligned,0
+58,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+59,__amd_rocclr_fillBufferAligned,0
+60,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+61,__amd_rocclr_fillBufferAligned,0
+62,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+63,__amd_rocclr_fillBufferAligned,0
+64,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+65,__amd_rocclr_fillBufferAligned,0
+66,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+67,__amd_rocclr_fillBufferAligned,0
+68,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+69,__amd_rocclr_fillBufferAligned,0
+70,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+71,__amd_rocclr_fillBufferAligned,0
+72,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+73,__amd_rocclr_fillBufferAligned,0
+74,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+75,__amd_rocclr_fillBufferAligned,0
+76,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+77,__amd_rocclr_fillBufferAligned,0
+78,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+79,__amd_rocclr_fillBufferAligned,0
+80,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+81,__amd_rocclr_fillBufferAligned,0
+82,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+83,__amd_rocclr_fillBufferAligned,0
+84,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+85,__amd_rocclr_fillBufferAligned,0
+86,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+87,__amd_rocclr_fillBufferAligned,0
+88,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+89,__amd_rocclr_fillBufferAligned,0
+90,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+91,__amd_rocclr_fillBufferAligned,0
+92,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+93,__amd_rocclr_fillBufferAligned,0
+94,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+95,__amd_rocclr_fillBufferAligned,0
+96,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+97,__amd_rocclr_fillBufferAligned,0
+98,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+99,__amd_rocclr_fillBufferAligned,0
+100,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+101,__amd_rocclr_fillBufferAligned,0
+102,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+103,__amd_rocclr_fillBufferAligned,0
+104,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+105,__amd_rocclr_fillBufferAligned,0
+106,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+107,__amd_rocclr_fillBufferAligned,0
+108,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+109,__amd_rocclr_fillBufferAligned,0
+110,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+111,__amd_rocclr_fillBufferAligned,0
+112,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+113,__amd_rocclr_fillBufferAligned,0
+114,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+115,__amd_rocclr_fillBufferAligned,0
+116,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+117,__amd_rocclr_fillBufferAligned,0
+118,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+119,__amd_rocclr_fillBufferAligned,0
+120,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+121,__amd_rocclr_fillBufferAligned,0
+122,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+123,__amd_rocclr_fillBufferAligned,0
+124,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+125,__amd_rocclr_fillBufferAligned,0
+126,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+127,__amd_rocclr_fillBufferAligned,0
+128,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+129,__amd_rocclr_fillBufferAligned,0
+130,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+131,__amd_rocclr_fillBufferAligned,0
+132,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+133,__amd_rocclr_fillBufferAligned,0
+134,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+135,__amd_rocclr_fillBufferAligned,0
+136,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+137,__amd_rocclr_fillBufferAligned,0
+138,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+139,__amd_rocclr_fillBufferAligned,0
+140,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+141,__amd_rocclr_fillBufferAligned,0
+142,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+143,__amd_rocclr_fillBufferAligned,0
+144,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+145,__amd_rocclr_fillBufferAligned,0
+146,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+147,__amd_rocclr_fillBufferAligned,0
+148,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+149,__amd_rocclr_fillBufferAligned,0
+150,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+151,__amd_rocclr_fillBufferAligned,0
+152,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+153,__amd_rocclr_fillBufferAligned,0
+154,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+155,__amd_rocclr_fillBufferAligned,0
+156,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+157,__amd_rocclr_fillBufferAligned,0
+158,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+159,__amd_rocclr_fillBufferAligned,0
+160,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+161,__amd_rocclr_fillBufferAligned,0
+162,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+163,__amd_rocclr_fillBufferAligned,0
+164,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+165,__amd_rocclr_fillBufferAligned,0
+166,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+167,__amd_rocclr_fillBufferAligned,0
+168,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+169,__amd_rocclr_fillBufferAligned,0
+170,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+171,__amd_rocclr_fillBufferAligned,0
+172,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+173,__amd_rocclr_fillBufferAligned,0
+174,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+175,__amd_rocclr_fillBufferAligned,0
+176,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+177,__amd_rocclr_fillBufferAligned,0
+178,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+179,__amd_rocclr_fillBufferAligned,0
+180,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+181,__amd_rocclr_fillBufferAligned,0
+182,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+183,__amd_rocclr_fillBufferAligned,0
+184,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+185,__amd_rocclr_fillBufferAligned,0
+186,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+187,__amd_rocclr_fillBufferAligned,0
+188,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+189,__amd_rocclr_fillBufferAligned,0
+190,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+191,__amd_rocclr_fillBufferAligned,0
+192,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+193,__amd_rocclr_fillBufferAligned,0
+194,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+195,__amd_rocclr_fillBufferAligned,0
+196,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+197,__amd_rocclr_fillBufferAligned,0
+198,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+199,__amd_rocclr_fillBufferAligned,0
+200,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+201,__amd_rocclr_fillBufferAligned,0
+202,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+203,__amd_rocclr_fillBufferAligned,0
+204,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+205,__amd_rocclr_fillBufferAligned,0
+206,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+207,__amd_rocclr_fillBufferAligned,0
+208,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+209,__amd_rocclr_fillBufferAligned,0
+210,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+211,__amd_rocclr_fillBufferAligned,0
+212,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+213,__amd_rocclr_fillBufferAligned,0
+214,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+215,__amd_rocclr_fillBufferAligned,0
+216,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+217,__amd_rocclr_fillBufferAligned,0
+218,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+219,__amd_rocclr_fillBufferAligned,0
+220,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+221,__amd_rocclr_fillBufferAligned,0
+222,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+223,__amd_rocclr_fillBufferAligned,0
+224,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+225,__amd_rocclr_fillBufferAligned,0
+226,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+227,__amd_rocclr_fillBufferAligned,0
+228,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+229,__amd_rocclr_fillBufferAligned,0
+230,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+231,__amd_rocclr_fillBufferAligned,0
+232,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+233,__amd_rocclr_fillBufferAligned,0
+234,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+235,__amd_rocclr_fillBufferAligned,0
+236,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+237,__amd_rocclr_fillBufferAligned,0
+238,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+239,__amd_rocclr_fillBufferAligned,0
+240,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+241,__amd_rocclr_fillBufferAligned,0
+242,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+243,__amd_rocclr_fillBufferAligned,0
+244,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+245,__amd_rocclr_fillBufferAligned,0
+246,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+247,__amd_rocclr_fillBufferAligned,0
+248,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+249,__amd_rocclr_fillBufferAligned,0
+250,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+251,__amd_rocclr_fillBufferAligned,0
+252,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+253,__amd_rocclr_fillBufferAligned,0
+254,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+255,__amd_rocclr_fillBufferAligned,0
+256,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+257,__amd_rocclr_fillBufferAligned,0
+258,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+259,__amd_rocclr_fillBufferAligned,0
+260,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+261,__amd_rocclr_fillBufferAligned,0
+262,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+263,__amd_rocclr_fillBufferAligned,0
+264,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+265,__amd_rocclr_fillBufferAligned,0
+266,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+267,__amd_rocclr_fillBufferAligned,0
+268,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+269,__amd_rocclr_fillBufferAligned,0
+270,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+271,__amd_rocclr_fillBufferAligned,0
+272,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+273,__amd_rocclr_fillBufferAligned,0
+274,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+275,__amd_rocclr_fillBufferAligned,0
+276,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+277,__amd_rocclr_fillBufferAligned,0
+278,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+279,__amd_rocclr_fillBufferAligned,0
+280,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+281,__amd_rocclr_fillBufferAligned,0
+282,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+283,__amd_rocclr_fillBufferAligned,0
+284,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+285,__amd_rocclr_fillBufferAligned,0
+286,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+287,__amd_rocclr_fillBufferAligned,0
+288,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+289,__amd_rocclr_fillBufferAligned,0
+290,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+291,__amd_rocclr_fillBufferAligned,0
+292,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+293,__amd_rocclr_fillBufferAligned,0
+294,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+295,__amd_rocclr_fillBufferAligned,0
+296,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+297,__amd_rocclr_fillBufferAligned,0
+298,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0
+299,__amd_rocclr_fillBufferAligned,0
+300,"void batched_matrix_multiplication_matrix_core_128x128x16<128u, 128u, 16u>(unsigned int, unsigned int, unsigned int, unsigned int, std::bfloat16_t const*, std::bfloat16_t const*, std::bfloat16_t*, dim3, dim3, dim3, int)",0

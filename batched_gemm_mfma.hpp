@@ -235,13 +235,10 @@ batched_matrix_multiplication_matrix_core_128x128x16_IGLP(uint M, uint N, uint K
         //ASM_DEBUG("; Prefetch A");
         bf16x8 tempNextA, tempNextB;
         tempNextA = *(bf16x8*)(&A[aLoc]);
-        *(bf16x8*)(&As[writeIdx][asLoc]) = tempNextA;
-    
         //ASM_DEBUG("; Prefetch B");
         tempNextB = *(bf16x8*)(&B[bLoc]);
-        *(bf16x8*)(&Bs[writeIdx][bsLoc]) = tempNextB;
-        
         //ASM_DEBUG("; MFMA");
+        __builtin_amdgcn_sched_barrier(0);
         #pragma unroll
         for (int i = 0; i < 2; ++i) { // K iter
             a[0] = *(bf16x4*)(&As[readIdx][i * 8 + aRegLoc]);
@@ -253,9 +250,12 @@ batched_matrix_multiplication_matrix_core_128x128x16_IGLP(uint M, uint N, uint K
             d[2] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[1], b[0], d[2], 0, 0, 0);
             d[3] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[1], b[1], d[3], 0, 0, 0);
         }
-        
+        __builtin_amdgcn_sched_barrier(0);
+
+        *(bf16x8*)(&As[writeIdx][asLoc]) = tempNextA;
+        *(bf16x8*)(&Bs[writeIdx][bsLoc]) = tempNextB;
         // Sync before swapping buffers
-        __syncthreads();
+        __builtin_amdgcn_s_barrier();
             
         A += BK;
         B += BK * strideBK;
@@ -272,7 +272,6 @@ batched_matrix_multiplication_matrix_core_128x128x16_IGLP(uint M, uint N, uint K
     
     // Process last tile (no prefetch needed) - interleave loads with MFMA
     readIdx = writeIdx;
-    
     // Load first operand
     #pragma unroll
     for (int i = 0; i < 2; ++i) { // K iter
@@ -280,12 +279,10 @@ batched_matrix_multiplication_matrix_core_128x128x16_IGLP(uint M, uint N, uint K
         a[1] = *(bf16x4*)(&As[readIdx][i * 8 + 64 * BK + aRegLoc]);
         b[0] = *(bf16x4*)(&Bs[readIdx][i * 8 + bRegLoc]);
         b[1] = *(bf16x4*)(&Bs[readIdx][i * 8 + 64 * BK + bRegLoc]);
-        __builtin_amdgcn_s_setprio(1);
         d[0] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[0], b[0], d[0], 0, 0, 0);
         d[1] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[0], b[1], d[1], 0, 0, 0);
         d[2] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[1], b[0], d[2], 0, 0, 0);
         d[3] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[1], b[1], d[3], 0, 0, 0);
-        __builtin_amdgcn_s_setprio(0);
     }
         
     C += (4 * threadRow + warpRow * 32) * N + threadCol + warpCol * 32;
@@ -381,7 +378,7 @@ batched_matrix_multiplication_matrix_core_128x128x16(uint M, uint N, uint K, uin
     }
     *(bf16x8*)(&Bs[writeIdx][bsLoc]) = tempB;
     
-    __syncthreads();
+    __builtin_amdgcn_s_barrier();
     // Advance pointers for next iteration
     A += BK;
     B += BK * strideBK;
@@ -393,14 +390,20 @@ batched_matrix_multiplication_matrix_core_128x128x16(uint M, uint N, uint K, uin
         writeIdx = 1 - writeIdx;
         
         //ASM_DEBUG("; Prefetch A");
+        bhalf_t tempB1, tempB2, tempB3, tempB4, tempB5, tempB6, tempB7, tempB8;
         bf16x8 tempNextA, tempNextB;
+
         tempNextA = *(bf16x8*)(&A[aLoc]);
+        tempB1 = B[bLoc];
+        tempB2 = B[bLoc + strideBK];
+        tempB3 = B[bLoc + 2 * strideBK];
+        tempB4 = B[bLoc + 3 * strideBK];
+        tempB5 = B[bLoc + 4 * strideBK];
+        tempB6 = B[bLoc + 5 * strideBK];
+        tempB7 = B[bLoc + 6 * strideBK];
+        tempB8 = B[bLoc + 7 * strideBK];
 
         //ASM_DEBUG("; Prefetch B");
-        #pragma unroll
-        for (int i = 0; i < 8; ++i) {
-            tempNextB[i] = B[bLoc + i * strideBK];
-        } 
 
         __builtin_amdgcn_sched_barrier(0);
         //ASM_DEBUG("; MFMA");
@@ -418,10 +421,19 @@ batched_matrix_multiplication_matrix_core_128x128x16(uint M, uint N, uint K, uin
 
         __builtin_amdgcn_sched_barrier(0);
 
+        tempNextB[0] = tempB1;
+        tempNextB[1] = tempB2;
+        tempNextB[2] = tempB3;
+        tempNextB[3] = tempB4;
+        tempNextB[4] = tempB5;
+        tempNextB[5] = tempB6;
+        tempNextB[6] = tempB7;
+        tempNextB[7] = tempB8;
+
         *(bf16x8*)(&As[writeIdx][asLoc]) = tempNextA;
         *(bf16x8*)(&Bs[writeIdx][bsLoc]) = tempNextB;
             
-        __syncthreads();
+         __builtin_amdgcn_s_barrier();
         A += BK;
         B += BK * strideBK;
     }
