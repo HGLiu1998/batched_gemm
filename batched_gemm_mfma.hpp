@@ -153,8 +153,8 @@ enum LLVMSchedGroupMask : int32_t
 
 template <const uint BM = 128, const uint BN = 128, const uint BK = 16>
 __global__ void
-__launch_bounds__(512, 2)
-batched_matrix_multiplication_matrix_core_128x128x16_IGLP(uint M, uint N, uint K, uint Batch, const bhalf_t *A, const bhalf_t *B, bhalf_t *C, dim3 strideA, dim3 strideB, dim3 strideC, int debug_level = 1)
+__launch_bounds__(256, 1)
+batched_matrix_multiplication_matrix_core_128x128x16_transe(uint M, uint N, uint K, uint Batch, const bhalf_t *A, const bhalf_t *B, bhalf_t *C, dim3 strideA, dim3 strideB, dim3 strideC, int debug_level = 1)
 {
     int blockRow = blockIdx.y;
     int blockCol = blockIdx.x;
@@ -186,20 +186,19 @@ batched_matrix_multiplication_matrix_core_128x128x16_IGLP(uint M, uint N, uint K
 
     bf16x4 a[2], b[2];
     floatx16 d[4] = {0};
-    
+    constexpr uint BK_PAD = BK + 4;
     //constexpr uint BK_PAD = BK + 4;
     // Double buffering: two sets of LDS buffers for prefetching (ping-pong pattern)
-    __shared__ __attribute__((aligned(16))) bhalf_t As[2][BM * BK]; 
-    __shared__ __attribute__((aligned(16))) bhalf_t Bs[2][BN * BK];
-    __shared__ __attribute__((aligned(16))) bhalf_t Cs[BN * BM];
+    __shared__ __attribute__((aligned(16))) bhalf_t As[2][BM * BK_PAD]; 
+    __shared__ __attribute__((aligned(16))) bhalf_t Bs[2][BN * BK_PAD];
 
     //uint aLoc = threadIdxInWarp * strideAM + strideK * 8 * strideAK;
     uint aLoc = (threadIdxInWarp + warpRow * 64) * strideAM + (warpCol * 8) * strideAK;
     //uint bLoc = threadIdxInWarp * strideBN + strideK * 8 * strideBK;
     uint bLoc = (threadIdxInWarp + warpCol * 64) * strideBN + (warpRow * 8) * strideBK;
 
-    uint asLoc = (threadIdxInWarp + warpRow * 64) * BK + (warpCol * 8);
-    uint bsLoc = (threadIdxInWarp + warpCol * 64) * BK + (warpRow * 8); // transposed
+    uint asLoc = (threadIdxInWarp + warpRow * 64) * BK_PAD + (warpCol * 8);
+    uint bsLoc = (threadIdxInWarp + warpCol * 64) * BK_PAD + (warpRow * 8); // transposed
 
 
     uint aRow = threadCol + warpRow * 32; // 0: [0-31] 1:[0-31] 2:[31-63] 3:[31-63]
@@ -207,20 +206,23 @@ batched_matrix_multiplication_matrix_core_128x128x16_IGLP(uint M, uint N, uint K
     uint bRow = threadCol + warpCol * 32; // 0 - 31 32 - 63
     uint bCol = threadRow * 4;            // 0, 4
     
-    uint aRegLoc = aRow * BK + aCol;
-    uint bRegLoc = bRow * BK + bCol; 
-    
+    uint aRegLoc = aRow * BK_PAD + aCol;
+    uint bRegLoc = bRow * BK_PAD + bCol; 
 
     int writeIdx = 0;
     int readIdx = 0;
     
+    bf16x8 tempA, tempB;
+
     //ASM_DEBUG("; Prefetch A first tile");
+    //tempA[writeIdx] = *(bf16x8*)(&A[aLoc]);
+    //tempB[writeIdx] = *(bf16x8*)(&B[bLoc]);
     *(bf16x8*)(&As[writeIdx][asLoc]) = *(bf16x8*)(&A[aLoc]);
     
     //ASM_DEBUG("; Prefetch B first tile");
     *(bf16x8*)(&Bs[writeIdx][bsLoc]) = *(bf16x8*)(&B[bLoc]);
     
-    __syncthreads();
+    __builtin_amdgcn_s_barrier();
     
     // Advance pointers for next iteration
     A += BK;
@@ -233,18 +235,24 @@ batched_matrix_multiplication_matrix_core_128x128x16_IGLP(uint M, uint N, uint K
         writeIdx = 1 - writeIdx;
         
         //ASM_DEBUG("; Prefetch A");
-        bf16x8 tempNextA, tempNextB;
-        tempNextA = *(bf16x8*)(&A[aLoc]);
+        tempA = *(bf16x8*)(&A[aLoc]);
         //ASM_DEBUG("; Prefetch B");
-        tempNextB = *(bf16x8*)(&B[bLoc]);
+        tempB = *(bf16x8*)(&B[bLoc]);
+
+        //asm volatile("s_waitcnt vmcnt(2)");
+        //*(bf16x8*)(&As[readIdx][asLoc]) = tempA[readIdx];
+        //*(bf16x8*)(&Bs[readIdx][bsLoc]) = tempB[readIdx];
         //ASM_DEBUG("; MFMA");
+        //asm volatile("s_waitcnt lgkmcnt(0)");
         __builtin_amdgcn_sched_barrier(0);
         #pragma unroll
         for (int i = 0; i < 2; ++i) { // K iter
+            //ASM_DEBUG("; load reg");
             a[0] = *(bf16x4*)(&As[readIdx][i * 8 + aRegLoc]);
-            a[1] = *(bf16x4*)(&As[readIdx][i * 8 + 64 * BK + aRegLoc]);
+            a[1] = *(bf16x4*)(&As[readIdx][i * 8 + 64 * BK_PAD + aRegLoc]);
             b[0] = *(bf16x4*)(&Bs[readIdx][i * 8 + bRegLoc]);
-            b[1] = *(bf16x4*)(&Bs[readIdx][i * 8 + 64 * BK + bRegLoc]);
+            b[1] = *(bf16x4*)(&Bs[readIdx][i * 8 + 64 * BK_PAD + bRegLoc]);
+            //ASM_DEBUG("; Do MFMA");
             d[0] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[0], b[0], d[0], 0, 0, 0);
             d[1] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[0], b[1], d[1], 0, 0, 0);
             d[2] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[1], b[0], d[2], 0, 0, 0);
@@ -252,11 +260,9 @@ batched_matrix_multiplication_matrix_core_128x128x16_IGLP(uint M, uint N, uint K
         }
         __builtin_amdgcn_sched_barrier(0);
 
-        *(bf16x8*)(&As[writeIdx][asLoc]) = tempNextA;
-        *(bf16x8*)(&Bs[writeIdx][bsLoc]) = tempNextB;
-        // Sync before swapping buffers
-        __builtin_amdgcn_s_barrier();
-            
+        *(bf16x8*)(&As[writeIdx][asLoc]) = tempA;
+        *(bf16x8*)(&Bs[writeIdx][bsLoc]) = tempB;
+        __builtin_amdgcn_s_barrier();            
         A += BK;
         B += BK * strideBK;
 
@@ -273,17 +279,19 @@ batched_matrix_multiplication_matrix_core_128x128x16_IGLP(uint M, uint N, uint K
     // Process last tile (no prefetch needed) - interleave loads with MFMA
     readIdx = writeIdx;
     // Load first operand
+    __builtin_amdgcn_sched_barrier(0);
     #pragma unroll
     for (int i = 0; i < 2; ++i) { // K iter
         a[0] = *(bf16x4*)(&As[readIdx][i * 8 + aRegLoc]);
-        a[1] = *(bf16x4*)(&As[readIdx][i * 8 + 64 * BK + aRegLoc]);
+        a[1] = *(bf16x4*)(&As[readIdx][i * 8 + 64 * BK_PAD + aRegLoc]);
         b[0] = *(bf16x4*)(&Bs[readIdx][i * 8 + bRegLoc]);
-        b[1] = *(bf16x4*)(&Bs[readIdx][i * 8 + 64 * BK + bRegLoc]);
+        b[1] = *(bf16x4*)(&Bs[readIdx][i * 8 + 64 * BK_PAD + bRegLoc]);
         d[0] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[0], b[0], d[0], 0, 0, 0);
         d[1] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[0], b[1], d[1], 0, 0, 0);
         d[2] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[1], b[0], d[2], 0, 0, 0);
         d[3] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[1], b[1], d[3], 0, 0, 0);
     }
+    __builtin_amdgcn_sched_barrier(0);
         
     C += (4 * threadRow + warpRow * 32) * N + threadCol + warpCol * 32;
 
@@ -304,7 +312,7 @@ batched_matrix_multiplication_matrix_core_128x128x16_IGLP(uint M, uint N, uint K
 
 template <const uint BM = 128, const uint BN = 128, const uint BK = 16>
 __global__ void
-__launch_bounds__(512, 2)
+__launch_bounds__(256, 1)
 batched_matrix_multiplication_matrix_core_128x128x16(uint M, uint N, uint K, uint Batch, const bhalf_t *A, const bhalf_t *B, bhalf_t *C, dim3 strideA, dim3 strideB, dim3 strideC, int debug_level = 1)
 {
     int blockRow = blockIdx.y;
@@ -340,19 +348,18 @@ batched_matrix_multiplication_matrix_core_128x128x16(uint M, uint N, uint K, uin
 
     bf16x4 a[2], b[2];
     floatx16 d[4] = {0};
-    
+    constexpr uint BK_PAD = BK + 4;
     // Double buffering: two sets of LDS buffers for prefetching (ping-pong pattern)
-    __shared__ __attribute__((aligned(16))) bhalf_t As[2][BM * BK]; 
-    __shared__ __attribute__((aligned(16))) bhalf_t Bs[2][BN * BK];
-    __shared__ __attribute__((aligned(16))) bhalf_t Cs[BN * BM];
+    __shared__ __attribute__((aligned(16))) bhalf_t As[2][BM * BK_PAD]; 
+    __shared__ __attribute__((aligned(16))) bhalf_t Bs[2][BN * BK_PAD];
 
     //uint aLoc = threadIdxInWarp * strideAM + strideK * 8 * strideAK;
     uint aLoc = (threadIdxInWarp + warpRow * 64) * strideAM + (warpCol * 8) * strideAK;
     //uint bLoc = threadIdxInWarp * strideBN + strideK * 8 * strideBK;
     uint bLoc = (threadIdxInWarp + warpCol * 64) * strideBN + (warpRow * 8) * strideBK;
 
-    uint asLoc = (threadIdxInWarp + warpRow * 64) * BK + (warpCol * 8);
-    uint bsLoc = (threadIdxInWarp + warpCol * 64) * BK + (warpRow * 8); // transposed
+    uint asLoc = (threadIdxInWarp + warpRow * 64) * BK_PAD + (warpCol * 8);
+    uint bsLoc = (threadIdxInWarp + warpCol * 64) * BK_PAD + (warpRow * 8); // transposed
 
 
     uint aRow = threadCol + warpRow * 32; // 0: [0-31] 1:[0-31] 2:[31-63] 3:[31-63]
@@ -360,8 +367,8 @@ batched_matrix_multiplication_matrix_core_128x128x16(uint M, uint N, uint K, uin
     uint bRow = threadCol + warpCol * 32; // 0 - 31 32 - 63
     uint bCol = threadRow * 4;            // 0, 4
     
-    uint aRegLoc = aRow * BK + aCol;
-    uint bRegLoc = bRow * BK + bCol; // transposed
+    uint aRegLoc = aRow * BK_PAD + aCol;
+    uint bRegLoc = bRow * BK_PAD + bCol; // transposed
     
 
     int writeIdx = 0;
@@ -402,7 +409,7 @@ batched_matrix_multiplication_matrix_core_128x128x16(uint M, uint N, uint K, uin
         tempB6 = B[bLoc + 5 * strideBK];
         tempB7 = B[bLoc + 6 * strideBK];
         tempB8 = B[bLoc + 7 * strideBK];
-
+        
         //ASM_DEBUG("; Prefetch B");
 
         __builtin_amdgcn_sched_barrier(0);
@@ -410,9 +417,9 @@ batched_matrix_multiplication_matrix_core_128x128x16(uint M, uint N, uint K, uin
         #pragma unroll
         for (int i = 0; i < 2; ++i) { // K iter
             a[0] = *(bf16x4*)(&As[readIdx][i * 8 + aRegLoc]);
-            a[1] = *(bf16x4*)(&As[readIdx][i * 8 + 64 * BK + aRegLoc]);
+            a[1] = *(bf16x4*)(&As[readIdx][i * 8 + 64 * BK_PAD + aRegLoc]);
             b[0] = *(bf16x4*)(&Bs[readIdx][i * 8 + bRegLoc]);
-            b[1] = *(bf16x4*)(&Bs[readIdx][i * 8 + 64 * BK + bRegLoc]);
+            b[1] = *(bf16x4*)(&Bs[readIdx][i * 8 + 64 * BK_PAD + bRegLoc]);
             d[0] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[0], b[0], d[0], 0, 0, 0);
             d[1] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[0], b[1], d[1], 0, 0, 0);
             d[2] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[1], b[0], d[2], 0, 0, 0);
@@ -445,9 +452,9 @@ batched_matrix_multiplication_matrix_core_128x128x16(uint M, uint N, uint K, uin
     #pragma unroll
     for (int i = 0; i < 2; ++i) { // K iter
         a[0] = *(bf16x4*)(&As[readIdx][i * 8 + aRegLoc]);
-        a[1] = *(bf16x4*)(&As[readIdx][i * 8 + 64 * BK + aRegLoc]);
+        a[1] = *(bf16x4*)(&As[readIdx][i * 8 + 64 * BK_PAD + aRegLoc]);
         b[0] = *(bf16x4*)(&Bs[readIdx][i * 8 + bRegLoc]);
-        b[1] = *(bf16x4*)(&Bs[readIdx][i * 8 + 64 * BK + bRegLoc]);
+        b[1] = *(bf16x4*)(&Bs[readIdx][i * 8 + 64 * BK_PAD + bRegLoc]);
         d[0] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[0], b[0], d[0], 0, 0, 0);
         d[1] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[0], b[1], d[1], 0, 0, 0);
         d[2] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[1], b[0], d[2], 0, 0, 0);
