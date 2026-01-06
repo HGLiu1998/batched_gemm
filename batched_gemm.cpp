@@ -41,7 +41,7 @@ int main(int argc, char* argv[])
 
     //const unsigned int tokens = 128;
     const unsigned int M = 128, K = 128, N = 512;
-    const unsigned int Batch = 128;
+    const unsigned int Batch = 64;
 
     using type = bhalf_t;
 
@@ -87,7 +87,7 @@ int main(int argc, char* argv[])
     dim3 gridDim(CEIL_DIV(N, BN), CEIL_DIV(M, BM), CEIL_DIV(Batch, 1)); // handle 64 x 64 x 1;
     dim3 blockDim(256, 1, 1);
 
-    bool transpose = false;
+    bool transpose = true;
 
     dim3 strideA(M * K, K, 1);
     dim3 strideB;
@@ -101,12 +101,12 @@ int main(int argc, char* argv[])
 
     //dim3 blockDim(32, 32, 1);
     //dim3 gridDim(CEIL_DIV(M, 32), CEIL_DIV(N, 32), CEIL_DIV(Batch, 1));
-    float elapsed_ms;
+    float elapsed_ms = 0.0;
 
     if (transpose) {
         for (int i = 0; i < warm_ups; ++i) {
             HIP_CHECK_ERROR(hipMemset(dC, 0, sizeC));
-            batched_matrix_multiplication_matrix_core_128x128x16_IGLP<<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC, strideA, strideB, strideC);
+            batched_matrix_multiplication_matrix_core_128x128x16_transe2<<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC, strideA, strideB, strideC);
 
             //batched_matrix_multiplication_coalesce<<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC);
         }
@@ -119,7 +119,7 @@ int main(int argc, char* argv[])
         
         for (int i = 0; i < total_loop; ++i) {
             HIP_CHECK_ERROR(hipMemset(dC, 0, sizeC));
-            batched_matrix_multiplication_matrix_core_128x128x16_IGLP<<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC, strideA, strideB, strideC);
+            batched_matrix_multiplication_matrix_core_128x128x16_transe2<<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC, strideA, strideB, strideC);
             //batched_matrix_multiplication_coalesce<<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC);
         }
 
