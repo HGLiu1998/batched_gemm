@@ -294,6 +294,198 @@ batched_matrix_multiplication_matrix_core_128x128x16_transe2(uint M, uint N, uin
     }
 }
 
+// Assembly-optimized version with explicit inline assembly
+template <const uint BM = 128, const uint BN = 128, const uint BK = 16>
+__global__ void
+__launch_bounds__(256, 1)
+batched_matrix_multiplication_matrix_core_128x128x16_transe_asm(uint M, uint N, uint K, uint Batch, const bhalf_t *A, const bhalf_t *B, bhalf_t *C, dim3 strideA, dim3 strideB, dim3 strideC, int debug_level = 1)
+{
+    int blockRow = blockIdx.y;
+    int blockCol = blockIdx.x;
+    int blockBatch = blockIdx.z;
+
+    int warpIdx = threadIdx.x / 64;
+    int warpCol = warpIdx % 2;
+    int warpRow = warpIdx / 2;
+
+    int threadIdxInWarp = threadIdx.x % 64;
+    int threadRow = threadIdxInWarp / 32;
+    int threadCol = threadIdxInWarp % 32;
+
+    int strideAB = strideA.x;
+    int strideAM = strideA.y;
+    int strideAK = strideA.z;
+
+    int strideBB = strideB.x;
+    int strideBK = strideB.y;
+    int strideBN = strideB.z;
+
+    int strideCB = strideC.x;
+    int strideCM = strideC.y;
+    int strideCN = strideC.z;
+
+    A += blockBatch * strideAB + blockRow * BM * strideAM;
+    B += blockBatch * strideBB + blockCol * BN * strideBN;
+    C += blockBatch * strideCB + blockRow * BM * strideCM + blockCol * BN * strideCN;
+
+    bf16x4 a[2], b[2];
+    floatx16 d[4] = {0};
+    constexpr uint BK_PAD = BK + 4;
+    
+    __shared__ __attribute__((aligned(16))) bhalf_t As[2][BM * BK_PAD]; 
+    __shared__ __attribute__((aligned(16))) bhalf_t Bs[2][BN * BK_PAD];
+
+    uint aLoc = (threadIdxInWarp + warpRow * 64) * strideAM + (warpCol * 8) * strideAK;
+    uint bLoc = (threadIdxInWarp + warpCol * 64) * strideBN + (warpRow * 8) * strideBK;
+
+    uint asLoc = (threadIdxInWarp + warpRow * 64) * BK_PAD + (warpCol * 8); 
+    uint bsLoc = (threadIdxInWarp + warpCol * 64) * BK_PAD + (warpRow * 8);
+
+    uint aRow = threadCol + warpRow * 32;
+    uint aCol = threadRow * 4;
+    uint bRow = threadCol + warpCol * 32;
+    uint bCol = threadRow * 4;
+    
+    uint aRegLoc = aRow * BK_PAD + aCol;
+    uint bRegLoc = bRow * BK_PAD + bCol; 
+
+    int writeIdx = 0;
+    int readIdx = 0;
+    
+    bf16x8 tempA, tempB;
+
+    // === ASSEMBLY: Global load A first tile ===
+    const bhalf_t* a_ptr = &A[aLoc];
+    asm volatile(
+        "global_load_dwordx4 %0, %1, off\n"
+        : "=v"(tempA) 
+        : "v"(a_ptr)
+        : "memory"
+    );
+    
+    // === ASSEMBLY: Global load B first tile ===
+    const bhalf_t* b_ptr = &B[bLoc];
+    asm volatile(
+        "global_load_dwordx4 %0, %1, off\n"
+        : "=v"(tempB) 
+        : "v"(b_ptr)
+        : "memory"
+    );
+    
+    // === ASSEMBLY: Wait for global loads ===
+    asm volatile("s_waitcnt vmcnt(0)\n" ::: "memory");
+    
+    // === ASSEMBLY: Write to LDS ===
+    uint32_t lds_a_addr = __builtin_amdgcn_ds_bpermute(asLoc * sizeof(bhalf_t), 0);
+    uint32_t lds_b_addr = __builtin_amdgcn_ds_bpermute(bsLoc * sizeof(bhalf_t), 0);
+    
+    *(bf16x8*)(&As[writeIdx][asLoc]) = tempA;
+    *(bf16x8*)(&Bs[writeIdx][bsLoc]) = tempB;
+    
+    __builtin_amdgcn_s_barrier();
+    
+    A += BK;
+    B += BK * strideBK;
+    
+    // === Main loop with explicit assembly ===
+    for (int k = BK; k < K; k += BK) {
+        readIdx = writeIdx;
+        writeIdx = 1 - writeIdx;
+        
+        // === ASSEMBLY: Prefetch global loads (non-blocking) ===
+        a_ptr = &A[aLoc];
+        b_ptr = &B[bLoc];
+        
+        asm volatile(
+            "global_load_dwordx4 %0, %1, off\n"
+            : "=v"(tempA) 
+            : "v"(a_ptr)
+            : "memory"
+        );
+        
+        asm volatile(
+            "global_load_dwordx4 %0, %1, off\n"
+            : "=v"(tempB) 
+            : "v"(b_ptr)
+            : "memory"
+        );
+
+        __builtin_amdgcn_sched_barrier(0);
+        
+        // === ASSEMBLY: LDS loads and MFMA with explicit scheduling ===
+        #pragma unroll
+        for (int i = 0; i < 2; ++i) {
+            // Load from LDS with explicit ds_read (compiler will optimize)
+            a[0] = *(bf16x4*)(&As[readIdx][i * 8 + aRegLoc]);
+            a[1] = *(bf16x4*)(&As[readIdx][i * 8 + 64 * BK_PAD + aRegLoc]);
+            b[0] = *(bf16x4*)(&Bs[readIdx][i * 8 + bRegLoc]);
+            b[1] = *(bf16x4*)(&Bs[readIdx][i * 8 + 64 * BK_PAD + bRegLoc]);
+            
+            // Wait for LDS reads before MFMA
+            asm volatile("s_waitcnt lgkmcnt(0)\n" ::: "memory");
+            
+            // MFMA operations
+            d[0] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[0], b[0], d[0], 0, 0, 0);
+            d[1] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[0], b[1], d[1], 0, 0, 0);
+            d[2] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[1], b[0], d[2], 0, 0, 0);
+            d[3] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[1], b[1], d[3], 0, 0, 0);
+        }
+        __builtin_amdgcn_sched_barrier(0);
+
+        // === ASSEMBLY: Wait for global loads, then write to LDS ===
+        asm volatile("s_waitcnt vmcnt(0)\n" ::: "memory");
+        
+        *(bf16x8*)(&As[writeIdx][asLoc]) = tempA;
+        *(bf16x8*)(&Bs[writeIdx][bsLoc]) = tempB;
+        
+        __builtin_amdgcn_s_barrier();            
+        A += BK;
+        B += BK * strideBK;
+    }
+    
+    // === Process last tile ===
+    readIdx = writeIdx;
+    __builtin_amdgcn_sched_barrier(0);
+    
+    #pragma unroll
+    for (int i = 0; i < 2; ++i) {
+        a[0] = *(bf16x4*)(&As[readIdx][i * 8 + aRegLoc]);
+        a[1] = *(bf16x4*)(&As[readIdx][i * 8 + 64 * BK_PAD + aRegLoc]);
+        b[0] = *(bf16x4*)(&Bs[readIdx][i * 8 + bRegLoc]);
+        b[1] = *(bf16x4*)(&Bs[readIdx][i * 8 + 64 * BK_PAD + bRegLoc]);
+        
+        asm volatile("s_waitcnt lgkmcnt(0)\n" ::: "memory");
+        
+        d[0] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[0], b[0], d[0], 0, 0, 0);
+        d[1] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[0], b[1], d[1], 0, 0, 0);
+        d[2] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[1], b[0], d[2], 0, 0, 0);
+        d[3] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[1], b[1], d[3], 0, 0, 0);
+    }
+    __builtin_amdgcn_sched_barrier(0);
+        
+    C += (4 * threadRow + warpRow * 32) * N + threadCol + warpCol * 32;
+
+    // === ASSEMBLY: Store results with explicit global_store ===
+    #pragma unroll
+    for (int i = 0; i < 16; ++i) {
+        int rowNum = i % 4;
+        int rowIdx = i / 4;
+        int idx = (rowNum + rowIdx * 8) * N;
+        
+        bhalf_t val0 = static_cast<__bf16>(d[0][i]);
+        bhalf_t val1 = static_cast<__bf16>(d[1][i]);
+        bhalf_t val2 = static_cast<__bf16>(d[2][i]);
+        bhalf_t val3 = static_cast<__bf16>(d[3][i]);
+        
+        // Use standard stores (compiler will optimize to global_store)
+        C[idx] = val0;
+        C[idx + 64] = val1;
+        C[idx + 64 * N] = val2;
+        C[idx + 64 * N + 64] = val3;
+    }
+}
+
+// Original C++ version (kept for reference)
 template <const uint BM = 128, const uint BN = 128, const uint BK = 16>
 __global__ void
 __launch_bounds__(256, 1)

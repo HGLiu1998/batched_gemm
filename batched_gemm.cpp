@@ -106,7 +106,7 @@ int main(int argc, char* argv[])
     if (transpose) {
         for (int i = 0; i < warm_ups; ++i) {
             HIP_CHECK_ERROR(hipMemset(dC, 0, sizeC));
-            batched_matrix_multiplication_matrix_core_128x128x16_transe2<<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC, strideA, strideB, strideC);
+            batched_matrix_multiplication_matrix_core_128x128x16_transe_asm<<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC, strideA, strideB, strideC);
 
             //batched_matrix_multiplication_coalesce<<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC);
         }
@@ -119,7 +119,7 @@ int main(int argc, char* argv[])
         
         for (int i = 0; i < total_loop; ++i) {
             HIP_CHECK_ERROR(hipMemset(dC, 0, sizeC));
-            batched_matrix_multiplication_matrix_core_128x128x16_transe2<<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC, strideA, strideB, strideC);
+            batched_matrix_multiplication_matrix_core_128x128x16_transe_asm<<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC, strideA, strideB, strideC);
             //batched_matrix_multiplication_coalesce<<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC);
         }
 
