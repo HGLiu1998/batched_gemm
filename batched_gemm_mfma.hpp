@@ -495,13 +495,13 @@ batched_matrix_multiplication_matrix_core_128x128x16_transe(uint M, uint N, uint
     int blockCol = blockIdx.x;
     int blockBatch = blockIdx.z;
 
-    int warpIdx = threadIdx.x / 64; // 0: [0-63], 1: [64-127], 2: [128-191], 3: [192-255]
-    int warpCol = warpIdx % 2; // 0, 1, 0, 1
-    int warpRow = warpIdx / 2; // 0, 0, 1, 1
+    int warpIdx = threadIdx.x >> 6; // 0: [0-63], 1: [64-127], 2: [128-191], 3: [192-255]
+    int warpCol = warpIdx & 1; // 0, 1, 0, 1
+    int warpRow = warpIdx >> 1; // 0, 0, 1, 1
 
-    int threadIdxInWarp = threadIdx.x % 64;
-    int threadRow = threadIdxInWarp / 32; // [0, 1]
-    int threadCol = threadIdxInWarp % 32; // [0-31] 
+    int threadIdxInWarp = threadIdx.x & 63;
+    int threadRow = threadIdxInWarp >> 5; // [0, 1]
+    int threadCol = threadIdxInWarp & 31; // [0-31] 
 
     int strideAB = strideA.x;
     int strideAM = strideA.y;
@@ -524,8 +524,8 @@ batched_matrix_multiplication_matrix_core_128x128x16_transe(uint M, uint N, uint
     constexpr uint BK_PAD = BK + 4;
     //constexpr uint BK_PAD = BK + 4;
     // Double buffering: two sets of LDS buffers for prefetching (ping-pong pattern)
-    __shared__ __attribute__((aligned(16))) bhalf_t As[2][BM * BK_PAD]; 
-    __shared__ __attribute__((aligned(16))) bhalf_t Bs[2][BN * BK_PAD];
+    __shared__ __attribute__((aligned(128))) bhalf_t As[2][BM * BK_PAD]; 
+    __shared__ __attribute__((aligned(128))) bhalf_t Bs[2][BN * BK_PAD];
 
     //uint aLoc = threadIdxInWarp * strideAM + strideK * 8 * strideAK;
     uint aLoc = (threadIdxInWarp + warpRow * 64) * strideAM + (warpCol * 8) * strideAK;

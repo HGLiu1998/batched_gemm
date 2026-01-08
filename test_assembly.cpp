@@ -6,6 +6,7 @@
 #include <cmath>
 #include <chrono>
 #include "batched_gemm_mfma.hpp"
+#include "batched_gemm_mfma_improved.hpp"
 
 #define HIP_CHECK(cmd) \
     do { \
@@ -137,7 +138,7 @@ int main(int argc, char* argv[]) {
     const uint M = 128;
     const uint N = 512;
     const uint K = 128;
-    const uint Batch = 64;
+    const uint Batch = 128;
     
     const uint BM = 128;
     const uint BN = 128;
@@ -206,8 +207,8 @@ int main(int argc, char* argv[]) {
     HIP_CHECK(hipMemset(d_C, 0, sizeC));
     
     auto asm_kernel = [&]() {
-        batched_matrix_multiplication_matrix_core_128x128x16_transe_asm<<<gridDim, blockDim>>>(
-            M, N, K, Batch, d_A, d_B, d_C, strideA, strideB, strideC, 0);
+        batched_gemm_128x128x16_transe_improved<<<gridDim, blockDim>>>(
+            M, N, K, Batch, d_A, d_B, d_C, strideA, strideB, strideC);
     };
     
     float asm_time = benchmark_kernel(asm_kernel, 10, 100);

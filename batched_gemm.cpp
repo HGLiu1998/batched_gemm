@@ -5,6 +5,7 @@
 #include <iostream>
 #include <hip/hip_runtime.h>
 #include "batched_gemm_mfma.hpp"
+#include "batched_gemm_mfma_improved.hpp"
 
 using namespace std;
 #define CEIL_DIV(a, b) (a + b - 1) / b
@@ -41,7 +42,7 @@ int main(int argc, char* argv[])
 
     //const unsigned int tokens = 128;
     const unsigned int M = 128, K = 128, N = 512;
-    const unsigned int Batch = 64;
+    const unsigned int Batch = 128;
 
     using type = bhalf_t;
 
@@ -105,8 +106,7 @@ int main(int argc, char* argv[])
 
     if (transpose) {
         for (int i = 0; i < warm_ups; ++i) {
-            HIP_CHECK_ERROR(hipMemset(dC, 0, sizeC));
-            batched_matrix_multiplication_matrix_core_128x128x16_transe_asm<<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC, strideA, strideB, strideC);
+            batched_gemm_128x128x16_transe_improved<<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC, strideA, strideB, strideC);
 
             //batched_matrix_multiplication_coalesce<<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC);
         }
@@ -118,8 +118,7 @@ int main(int argc, char* argv[])
         hipEventRecord(start, NULL);
         
         for (int i = 0; i < total_loop; ++i) {
-            HIP_CHECK_ERROR(hipMemset(dC, 0, sizeC));
-            batched_matrix_multiplication_matrix_core_128x128x16_transe_asm<<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC, strideA, strideB, strideC);
+            batched_gemm_128x128x16_transe_improved<<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC, strideA, strideB, strideC);
             //batched_matrix_multiplication_coalesce<<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC);
         }
 
@@ -130,13 +129,14 @@ int main(int argc, char* argv[])
         
         hipEventDestroy(start);
         hipEventDestroy(end);
+
+        HIP_CHECK_ERROR(hipMemset(dC, 0, sizeC));
+        batched_gemm_128x128x16_transe_improved<<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC, strideA, strideB, strideC);
 
         HIP_CHECK_ERROR(hipMemcpy(C, dC, sizeC, hipMemcpyDeviceToHost));
     } else {
         for (int i = 0; i < warm_ups; ++i) {
-            HIP_CHECK_ERROR(hipMemset(dC, 0, sizeC));
             batched_matrix_multiplication_matrix_core_128x128x16<<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC, strideA, strideB, strideC);
-
             //batched_matrix_multiplication_coalesce<<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC);
         }
         
@@ -147,7 +147,6 @@ int main(int argc, char* argv[])
         hipEventRecord(start, NULL);
         
         for (int i = 0; i < total_loop; ++i) {
-            HIP_CHECK_ERROR(hipMemset(dC, 0, sizeC));
             batched_matrix_multiplication_matrix_core_128x128x16<<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC, strideA, strideB, strideC);
             //batched_matrix_multiplication_coalesce<<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC);
         }
@@ -159,6 +158,9 @@ int main(int argc, char* argv[])
         
         hipEventDestroy(start);
         hipEventDestroy(end);
+
+        HIP_CHECK_ERROR(hipMemset(dC, 0, sizeC));
+        batched_matrix_multiplication_matrix_core_128x128x16<<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC, strideA, strideB, strideC);
 
         HIP_CHECK_ERROR(hipMemcpy(C, dC, sizeC, hipMemcpyDeviceToHost));
     }
