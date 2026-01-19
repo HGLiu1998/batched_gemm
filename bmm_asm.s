@@ -12,70 +12,6 @@ _Z39batched_gemm_128x128x16_transe_improvedILj128ELj128ELj16EEvjjjjPKDF16bS1_PDF
 	s_load_dwordx2 s[20:21], s[0:1], 0x20
 	s_load_dwordx8 s[8:15], s[0:1], 0x28
 	s_load_dword s5, s[0:1], 0x48
-	v_accvgpr_write_b32 a63, 0
-	v_accvgpr_write_b32 a62, 0
-	v_accvgpr_write_b32 a61, 0
-	v_accvgpr_write_b32 a60, 0
-	v_accvgpr_write_b32 a59, 0
-	v_accvgpr_write_b32 a58, 0
-	v_accvgpr_write_b32 a57, 0
-	v_accvgpr_write_b32 a56, 0
-	v_accvgpr_write_b32 a55, 0
-	v_accvgpr_write_b32 a54, 0
-	v_accvgpr_write_b32 a53, 0
-	v_accvgpr_write_b32 a52, 0
-	v_accvgpr_write_b32 a51, 0
-	v_accvgpr_write_b32 a50, 0
-	v_accvgpr_write_b32 a49, 0
-	v_accvgpr_write_b32 a48, 0
-	v_accvgpr_write_b32 a47, 0
-	v_accvgpr_write_b32 a46, 0
-	v_accvgpr_write_b32 a45, 0
-	v_accvgpr_write_b32 a44, 0
-	v_accvgpr_write_b32 a43, 0
-	v_accvgpr_write_b32 a42, 0
-	v_accvgpr_write_b32 a41, 0
-	v_accvgpr_write_b32 a40, 0
-	v_accvgpr_write_b32 a39, 0
-	v_accvgpr_write_b32 a38, 0
-	v_accvgpr_write_b32 a37, 0
-	v_accvgpr_write_b32 a36, 0
-	v_accvgpr_write_b32 a35, 0
-	v_accvgpr_write_b32 a34, 0
-	v_accvgpr_write_b32 a33, 0
-	v_accvgpr_write_b32 a32, 0
-	v_accvgpr_write_b32 a31, 0
-	v_accvgpr_write_b32 a30, 0
-	v_accvgpr_write_b32 a29, 0
-	v_accvgpr_write_b32 a28, 0
-	v_accvgpr_write_b32 a27, 0
-	v_accvgpr_write_b32 a26, 0
-	v_accvgpr_write_b32 a25, 0
-	v_accvgpr_write_b32 a24, 0
-	v_accvgpr_write_b32 a23, 0
-	v_accvgpr_write_b32 a22, 0
-	v_accvgpr_write_b32 a21, 0
-	v_accvgpr_write_b32 a20, 0
-	v_accvgpr_write_b32 a19, 0
-	v_accvgpr_write_b32 a18, 0
-	v_accvgpr_write_b32 a17, 0
-	v_accvgpr_write_b32 a16, 0
-	v_accvgpr_write_b32 a15, 0
-	v_accvgpr_write_b32 a14, 0
-	v_accvgpr_write_b32 a13, 0
-	v_accvgpr_write_b32 a12, 0
-	v_accvgpr_write_b32 a11, 0
-	v_accvgpr_write_b32 a10, 0
-	v_accvgpr_write_b32 a9, 0
-	v_accvgpr_write_b32 a8, 0
-	v_accvgpr_write_b32 a7, 0
-	v_accvgpr_write_b32 a6, 0
-	v_accvgpr_write_b32 a5, 0
-	v_accvgpr_write_b32 a4, 0
-	v_accvgpr_write_b32 a3, 0
-	v_accvgpr_write_b32 a2, 0
-	v_accvgpr_write_b32 a1, 0
-	v_accvgpr_write_b32 a0, 0
 	s_lshl_b32 s26, s2, 7
 	v_lshrrev_b32_e32 v1, 7, v0
 	v_and_b32_e32 v2, 63, v0
@@ -158,7 +94,70 @@ _Z39batched_gemm_128x128x16_transe_improvedILj128ELj128ELj16EEvjjjjPKDF16bS1_PDF
 	v_add_u32_e32 v13, 8, v7
 	v_add_u32_e32 v10, 0x508, v7
 	s_addc_u32 s11, s11, 0
-	s_setprio 1
+	v_accvgpr_write_b32 a63, 0
+	v_accvgpr_write_b32 a62, 0
+	v_accvgpr_write_b32 a61, 0
+	v_accvgpr_write_b32 a60, 0
+	v_accvgpr_write_b32 a59, 0
+	v_accvgpr_write_b32 a58, 0
+	v_accvgpr_write_b32 a57, 0
+	v_accvgpr_write_b32 a56, 0
+	v_accvgpr_write_b32 a55, 0
+	v_accvgpr_write_b32 a54, 0
+	v_accvgpr_write_b32 a53, 0
+	v_accvgpr_write_b32 a52, 0
+	v_accvgpr_write_b32 a51, 0
+	v_accvgpr_write_b32 a50, 0
+	v_accvgpr_write_b32 a49, 0
+	v_accvgpr_write_b32 a48, 0
+	v_accvgpr_write_b32 a47, 0
+	v_accvgpr_write_b32 a46, 0
+	v_accvgpr_write_b32 a45, 0
+	v_accvgpr_write_b32 a44, 0
+	v_accvgpr_write_b32 a43, 0
+	v_accvgpr_write_b32 a42, 0
+	v_accvgpr_write_b32 a41, 0
+	v_accvgpr_write_b32 a40, 0
+	v_accvgpr_write_b32 a39, 0
+	v_accvgpr_write_b32 a38, 0
+	v_accvgpr_write_b32 a37, 0
+	v_accvgpr_write_b32 a36, 0
+	v_accvgpr_write_b32 a35, 0
+	v_accvgpr_write_b32 a34, 0
+	v_accvgpr_write_b32 a33, 0
+	v_accvgpr_write_b32 a32, 0
+	v_accvgpr_write_b32 a31, 0
+	v_accvgpr_write_b32 a30, 0
+	v_accvgpr_write_b32 a29, 0
+	v_accvgpr_write_b32 a28, 0
+	v_accvgpr_write_b32 a27, 0
+	v_accvgpr_write_b32 a26, 0
+	v_accvgpr_write_b32 a25, 0
+	v_accvgpr_write_b32 a24, 0
+	v_accvgpr_write_b32 a23, 0
+	v_accvgpr_write_b32 a22, 0
+	v_accvgpr_write_b32 a21, 0
+	v_accvgpr_write_b32 a20, 0
+	v_accvgpr_write_b32 a19, 0
+	v_accvgpr_write_b32 a18, 0
+	v_accvgpr_write_b32 a17, 0
+	v_accvgpr_write_b32 a16, 0
+	v_accvgpr_write_b32 a15, 0
+	v_accvgpr_write_b32 a14, 0
+	v_accvgpr_write_b32 a13, 0
+	v_accvgpr_write_b32 a12, 0
+	v_accvgpr_write_b32 a11, 0
+	v_accvgpr_write_b32 a10, 0
+	v_accvgpr_write_b32 a9, 0
+	v_accvgpr_write_b32 a8, 0
+	v_accvgpr_write_b32 a7, 0
+	v_accvgpr_write_b32 a6, 0
+	v_accvgpr_write_b32 a5, 0
+	v_accvgpr_write_b32 a4, 0
+	v_accvgpr_write_b32 a3, 0
+	v_accvgpr_write_b32 a2, 0
+	v_accvgpr_write_b32 a1, 0
+	v_accvgpr_write_b32 a0, 0
 .LBB0_2:                                ; %.lr.ph
                                         ; =>This Inner Loop Header: Depth=1
 	v_lshl_add_u64 v[20:21], v[2:3], 1, s[10:11]
@@ -177,20 +176,24 @@ _Z39batched_gemm_128x128x16_transe_improvedILj128ELj128ELj16EEvjjjjPKDF16bS1_PDF
 	v_lshl_add_u32 v36, v7, 1, s0
 	ds_read2st64_b64 v[28:31], v19 offset1:5
 	ds_read2st64_b64 v[32:35], v36 offset0:20 offset1:25
+	;;#ASMSTART
+	s_waitcnt lgkmcnt(0)
 
+	;;#ASMEND
 	v_add_u32_e32 v19, 16, v19
-	v_add_u32_e32 v32, 16, v36
 	s_xor_b32 s1, s1, 1
-
 	s_waitcnt lgkmcnt(0)
 	v_mfma_f32_32x32x8_bf16 a[48:63], v[28:29], v[32:33], a[48:63]
 	v_mfma_f32_32x32x8_bf16 a[32:47], v[28:29], v[34:35], a[32:47]
 	v_mfma_f32_32x32x8_bf16 a[16:31], v[30:31], v[32:33], a[16:31]
+	v_add_u32_e32 v32, 16, v36
 	v_mfma_f32_32x32x8_bf16 a[0:15], v[30:31], v[34:35], a[0:15]
-
 	ds_read2st64_b64 v[28:31], v19 offset1:5
 	ds_read2st64_b64 v[32:35], v32 offset0:20 offset1:25
+	;;#ASMSTART
+	s_waitcnt lgkmcnt(0)
 
+	;;#ASMEND
 	s_waitcnt lgkmcnt(0)
 	v_mfma_f32_32x32x8_bf16 a[48:63], v[28:29], v[32:33], a[48:63]
 	v_mfma_f32_32x32x8_bf16 a[32:47], v[28:29], v[34:35], a[32:47]
@@ -215,7 +218,6 @@ _Z39batched_gemm_128x128x16_transe_improvedILj128ELj128ELj16EEvjjjjPKDF16bS1_PDF
 	ds_write2_b64 v19, v[24:25], v[26:27] offset1:1
 	s_barrier
 	s_cbranch_scc0 .LBB0_2
-	s_setprio 0
 ; %bb.3:                                ; %Flow
 	s_branch .LBB0_6
 .LBB0_4:
