@@ -66,7 +66,7 @@ batched_gemm_128x128x16_transe_improved(
     __shared__ __attribute__((aligned(128))) bhalf_t Bs[2][BN * BK_PAD];
 
     // ========== Register Allocation ==========
-    bf16x4 a[2], b[2];           // Operands for MFMA
+    bf16x4 a[4], b[4];           // Operands for MFMA
     floatx16 acc[4] = {0};       // Accumulators (renamed from 'd' for clarity)
     bf16x8 prefetch[2];          // Prefetch registers for A and B
 
@@ -154,7 +154,32 @@ batched_gemm_128x128x16_transe_improved(
         
         __builtin_amdgcn_sched_barrier(0);
         
+
+        a[0] = *(bf16x4*)(&As[readIdx][aLdsReadOffset]);
+        b[0] = *(bf16x4*)(&Bs[readIdx][bLdsReadOffset]);
+
+        a[1] = *(bf16x4*)(&As[readIdx][64 * BK_PAD + aLdsReadOffset]);
+        b[1] = *(bf16x4*)(&Bs[readIdx][64 * BK_PAD + bLdsReadOffset]);
+
+        acc[0] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[0], b[0], acc[0], 0, 0, 0);
+
+        a[2] = *(bf16x4*)(&As[readIdx][8 + aLdsReadOffset]);
+        b[2] = *(bf16x4*)(&Bs[readIdx][8 + bLdsReadOffset]);
+
+        acc[1] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[0], b[1], acc[1], 0, 0, 0);
+        acc[2] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[1], b[0], acc[2], 0, 0, 0);
+        acc[3] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[1], b[1], acc[3], 0, 0, 0);
+
+        a[3] = *(bf16x4*)(&As[readIdx][8 + 64 * BK_PAD + aLdsReadOffset]);
+        b[3] = *(bf16x4*)(&Bs[readIdx][8 + 64 * BK_PAD + bLdsReadOffset]);
+
+        acc[0] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[2], b[2], acc[0], 0, 0, 0);
+        acc[1] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[2], b[3], acc[1], 0, 0, 0);
+        acc[2] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[3], b[2], acc[2], 0, 0, 0);
+        acc[3] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[3], b[3], acc[3], 0, 0, 0);
+        
         // Manually unroll K iterations for better scheduling
+        /** 
         #pragma unroll
         for (int k_iter = 0; k_iter < K_ITERATIONS; ++k_iter) {
             const int k_offset = k_iter * 8;
@@ -168,7 +193,7 @@ batched_gemm_128x128x16_transe_improved(
             b[1] = *(bf16x4*)(&Bs[readIdx][k_offset + 64 * BK_PAD + bLdsReadOffset]);
             
             // Wait for LDS reads (critical for correctness)
-            asm volatile("s_waitcnt lgkmcnt(0)\n" ::: "memory");
+            //asm volatile("s_waitcnt lgkmcnt(0)\n" ::: "memory");
             
             // MFMA computations (64 cycles each, can pipeline with loads)
             acc[0] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[0], b[0], acc[0], 0, 0, 0);
@@ -176,6 +201,7 @@ batched_gemm_128x128x16_transe_improved(
             acc[2] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[1], b[0], acc[2], 0, 0, 0);
             acc[3] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[1], b[1], acc[3], 0, 0, 0);
         }
+        **/
         
         __builtin_amdgcn_sched_barrier(0);
 
