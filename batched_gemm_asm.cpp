@@ -34,7 +34,7 @@ void randomize_matrix(bhalf_t* mat, int N) {
 
 }
 
-#define HSACO "bmm_asmco"
+#define HSACO "bmm_asm.co"
 #define HSA_KERNEL "_Z39batched_gemm_128x128x16_transe_improvedILj128ELj128ELj16EEvjjjjPKDF16bS1_PDF16b4dim3S3_S3_"
 
 int main(int argc, char* argv[])
