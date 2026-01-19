@@ -155,31 +155,8 @@ batched_gemm_128x128x16_transe_improved(
         __builtin_amdgcn_sched_barrier(0);
         
 
-        a[0] = *(bf16x4*)(&As[readIdx][aLdsReadOffset]);
-        b[0] = *(bf16x4*)(&Bs[readIdx][bLdsReadOffset]);
-
-        a[1] = *(bf16x4*)(&As[readIdx][64 * BK_PAD + aLdsReadOffset]);
-        b[1] = *(bf16x4*)(&Bs[readIdx][64 * BK_PAD + bLdsReadOffset]);
-
-        acc[0] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[0], b[0], acc[0], 0, 0, 0);
-
-        a[2] = *(bf16x4*)(&As[readIdx][8 + aLdsReadOffset]);
-        b[2] = *(bf16x4*)(&Bs[readIdx][8 + bLdsReadOffset]);
-
-        acc[1] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[0], b[1], acc[1], 0, 0, 0);
-        acc[2] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[1], b[0], acc[2], 0, 0, 0);
-        acc[3] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[1], b[1], acc[3], 0, 0, 0);
-
-        a[3] = *(bf16x4*)(&As[readIdx][8 + 64 * BK_PAD + aLdsReadOffset]);
-        b[3] = *(bf16x4*)(&Bs[readIdx][8 + 64 * BK_PAD + bLdsReadOffset]);
-
-        acc[0] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[2], b[2], acc[0], 0, 0, 0);
-        acc[1] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[2], b[3], acc[1], 0, 0, 0);
-        acc[2] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[3], b[2], acc[2], 0, 0, 0);
-        acc[3] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[3], b[3], acc[3], 0, 0, 0);
-        
         // Manually unroll K iterations for better scheduling
-        /** 
+        
         #pragma unroll
         for (int k_iter = 0; k_iter < K_ITERATIONS; ++k_iter) {
             const int k_offset = k_iter * 8;
@@ -201,7 +178,7 @@ batched_gemm_128x128x16_transe_improved(
             acc[2] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[1], b[0], acc[2], 0, 0, 0);
             acc[3] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[1], b[1], acc[3], 0, 0, 0);
         }
-        **/
+        
         
         __builtin_amdgcn_sched_barrier(0);
 
