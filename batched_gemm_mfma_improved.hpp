@@ -431,240 +431,276 @@ batched_gemm_128x128x16_transe_ultra(
 }
 
 // ============================================================================
-// 128x512x16 Optimized Implementation (8 Warps)
+// 128x512x16 Optimized Implementation (16 Warps / 1024 Threads)
+// Reduces Register Pressure to boost Occupancy
 // ============================================================================
 
 template <const uint BM = 128, const uint BN = 512, const uint BK = 16>
 __global__ void
-__launch_bounds__(512, 2)
+__launch_bounds__(1024, 1)
 batched_gemm_128x512x16_transe_improved(
     uint M, uint N, uint K, uint Batch,
     const bhalf_t *A, const bhalf_t *B, bhalf_t *C,
     dim3 strideA, dim3 strideB, dim3 strideC)
 {
-    // Block: 512 threads (8 warps)
     const int blockRow = blockIdx.y;
     const int blockCol = blockIdx.x;
     const int blockBatch = blockIdx.z;
     const int tid = threadIdx.x;
 
-    // Warp Layout: 2x4 (Row x Col)
-    // Row 0-1 covers 128 M (64 each). Col 0-3 covers 512 N (128 each).
     const int warpIdx = tid / 64;
-    const int warpRow = warpIdx / 4;  // 0..1
-    const int warpCol = warpIdx % 4;  // 0..3
+    const int warpRow = warpIdx / 8;  // 0..1
+    const int warpCol = warpIdx % 8;  // 0..7
 
-    // Thread in Warp
     const int threadIdxInWarp = tid & 63;
-    const int threadRow = threadIdxInWarp >> 5; // 0..1
-    const int threadCol = threadIdxInWarp & 31; // 0..31
+    const int threadRow = threadIdxInWarp >> 5; 
+    const int threadCol = threadIdxInWarp & 31; 
 
     const int strideAB = strideA.x;
     const int strideAM = strideA.y;
-
     const int strideBB = strideB.x;
-    const int strideBN = strideB.z; // K stride (16)
-    // strideB.y is 1 (row stride?)
-    // Actually in main code:
-    // strideB = dim3(N * K, 1, K); -> .x=N*K, .y=1, .z=K
-    // And kernel usage in 128x128:
-    // B += blockBatch * strideBB + blockCol * BN * strideBN;
-    // B pointers jump by strideBN (K) per BN.
-    // So BN*strideBN = 128*K.
-    // In our case 512*K.
-    // The load logic: bGlobalOffset = (threadIdxInWarp + ...)*strideBN + ...
-    
-    // We will use simplified pointer arithmetic based on tid.
-    // We assume B is stored such that stepping 1 in memory moves along the "K" dimension (stride 1).
-    // And stepping "K" in memory moves along the "N" dimension.
-    // So B[n][k] is at B + n*K + k.
-
+    const int strideBN = strideB.z; 
     const int strideCB = strideC.x;
     const int strideCM = strideC.y;
     const int strideCN = strideC.z;
 
-    // Pointers
     A += blockBatch * strideAB + blockRow * BM * strideAM;
     B += blockBatch * strideBB + blockCol * BN * strideBN; 
     C += blockBatch * strideCB + blockRow * BM * strideCM + blockCol * BN * strideCN;
 
-    // LDS
-    // As: 128x16. 
-    // Bs: 512x16.
-    constexpr uint BK_PAD = BK + 4; // 20 bf16s
+    constexpr uint BK_PAD = BK + 4; 
     __shared__ __attribute__((aligned(128))) bhalf_t As[2][BM * BK_PAD]; 
     __shared__ __attribute__((aligned(128))) bhalf_t Bs[2][BN * BK_PAD];
 
-    // Registers
-    bf16x4 a[2]; // 2 row blocks per warp (64 rows / 32 = 2)
-    bf16x4 b[4]; // 4 col blocks per warp (128 cols / 32 = 4)
-    floatx16 acc[8] = {0}; // 8 MFMA blocks (2x4) 
+    bf16x4 a[2], b[2];
+    floatx16 acc[4] = {0}; 
     
-    bf16x4 prefetchA; // 1 load (8 bytes = 4 bf16s)
-    bf16x8 prefetchB[2]; // 2 loads (32 bytes = 16 bf16s)
+    bf16x8 prefetchB; 
+    bf16x4 prefetchA; 
 
-    // Global Load Offsets
-    // A: 128x16. 512 threads.
-    // Each thread loads 4 bf16s.
-    // Map tid linear to 128x16.
-    // row = tid / 4. (0..127)
-    // col = (tid % 4) * 4. (0, 4, 8, 12).
-    // Stride is strideAM.
-    int a_row = tid >> 2;
-    int a_col = (tid & 3) << 2;
-    // Ptr A + a_row * strideAM + a_col.
-    // Wait, strideAM is row stride.
-    // Usually A is Row-Major (M x K).
-    // A[row][col] -> A + row*K + col?
-    // main: strideA(M * K, K, 1). .y=K.
-    // So strideAM = K.
-    // Yes.
+    int b_row_load = tid % 512;
+    int b_col_offset = (tid / 512) * 8; 
     
-    // B: 512x16. 512 threads.
-    // Each thread loads 16 bf16s.
-    // row = tid. (0..511).
-    // col = 0..15.
-    // Stride for row is K (strideBN).
-    // B + tid * strideBN.
+    bool loadA = (tid < 256);
+    int a_row_load = tid % 128;
+    int a_col_offset = (tid / 128) * 8; 
     
+    uint aLdsWrite = a_row_load * BK_PAD + a_col_offset;
+    uint bLdsWrite = b_row_load * BK_PAD + b_col_offset;
+
+    uint aLdsReadBase = (warpRow * 64 + threadCol) * BK_PAD + threadRow * 4;
+    uint bLdsReadBase = (warpCol * 64 + threadCol) * BK_PAD + threadRow * 4;
+
     int writeIdx = 0;
     int readIdx = 0;
-    
-    // Calculated LDS offsets for writing
-    // As: Row-major mapping. As[a_row][a_col].
-    // Bs: Row-major mapping. Bs[tid][0].
-    
-    uint aLdsWrite = a_row * BK_PAD + a_col;
-    uint bLdsWrite = tid * BK_PAD;
 
-    // LDS Read Offsets for MFMA
-    // Base for Warp
-    // A: WarpRow * 64 rows.
-    // B: WarpCol * 128 cols.
-    
-    uint aLdsReadBase = (warpRow * 64 + threadCol) * BK_PAD + threadRow * 4;
-    // If warpRow=0: 0..31.
-    // If warpRow=1: 64..95.
-    // We need 2 blocks per warp (0..31 and 32..63).
-    // So `a[0]` uses base.
-    // `a[1]` uses base + 32*BK_PAD.
-
-    // B Read Base
-    // WarpCol (0..3). 128 cols each.
-    // Base: warpCol * 128.
-    // `b[0]` (0..31), `b[1]` (32..63), `b[2]` (64..95), `b[3]` (96..127).
-    uint bLdsReadBase = (warpCol * 128 + threadCol) * BK_PAD + threadRow * 4;
-
-    // ================== Prologue ==================
-    // Load A
-    asm volatile("global_load_dwordx2 %0, %1, off\n" : "=v"(prefetchA) : "v"(&A[a_row * strideAM + a_col]) : "memory");
-    // Load B (2 parts)
-    asm volatile("global_load_dwordx4 %0, %1, off\n" : "=v"(prefetchB[0]) : "v"(&B[tid * strideBN]) : "memory");
-    asm volatile("global_load_dwordx4 %0, %1, off offset:16\n" : "=v"(prefetchB[1]) : "v"(&B[tid * strideBN]) : "memory");
+    if (loadA) {
+        asm volatile("global_load_dwordx4 %0, %1, off\n" : "=v"(prefetchA) : "v"(&A[a_row_load * strideAM + a_col_offset]) : "memory");
+    }
+    asm volatile("global_load_dwordx4 %0, %1, off\n" : "=v"(prefetchB) : "v"(&B[b_row_load * strideBN + b_col_offset]) : "memory");
     
     asm volatile("s_waitcnt vmcnt(0)\n" ::: "memory");
     
-    // Write LDS
-    *(bf16x4*)(&As[writeIdx][aLdsWrite]) = prefetchA;
-    *(bf16x8*)(&Bs[writeIdx][bLdsWrite]) = prefetchB[0];
-    *(bf16x8*)(&Bs[writeIdx][bLdsWrite + 8]) = prefetchB[1];
+    if (loadA) {
+        *(bf16x8*)(&As[writeIdx][aLdsWrite]) = *(bf16x8*)&prefetchA;
+    }
+    *(bf16x8*)(&Bs[writeIdx][bLdsWrite]) = prefetchB;
     
     __builtin_amdgcn_s_barrier();
     
     A += BK;
-    B += BK; // strideBK=1
+    B += BK;
 
     const int numTiles = (K - BK) / BK;
 
-    // ================== Main Loop ==================
     for (int tile = 0; tile < numTiles; ++tile) {
         readIdx = writeIdx;
         writeIdx = 1 - writeIdx;
         
-        // Prefetch
-        asm volatile("global_load_dwordx2 %0, %1, off\n" : "=v"(prefetchA) : "v"(&A[a_row * strideAM + a_col]) : "memory");
-        asm volatile("global_load_dwordx4 %0, %1, off\n" : "=v"(prefetchB[0]) : "v"(&B[tid * strideBN]) : "memory");
-        asm volatile("global_load_dwordx4 %0, %1, off offset:16\n" : "=v"(prefetchB[1]) : "v"(&B[tid * strideBN]) : "memory");
+        if (loadA) {
+            asm volatile("global_load_dwordx4 %0, %1, off\n" : "=v"(prefetchA) : "v"(&A[a_row_load * strideAM + a_col_offset]) : "memory");
+        }
+        asm volatile("global_load_dwordx4 %0, %1, off\n" : "=v"(prefetchB) : "v"(&B[b_row_load * strideBN + b_col_offset]) : "memory");
         
-        // Compute
         #pragma unroll
         for (int k_iter = 0; k_iter < 2; ++k_iter) {
             const int k_offset = k_iter * 8; 
-            
-            // Load A (2 blocks: 0 and 32)
             a[0] = *(bf16x4*)(&As[readIdx][aLdsReadBase + k_offset]);
             a[1] = *(bf16x4*)(&As[readIdx][aLdsReadBase + k_offset + 32 * BK_PAD]);
-            
-            // Load B (4 blocks: 0, 32, 64, 96)
             b[0] = *(bf16x4*)(&Bs[readIdx][bLdsReadBase + k_offset]);
             b[1] = *(bf16x4*)(&Bs[readIdx][bLdsReadBase + k_offset + 32 * BK_PAD]);
-            b[2] = *(bf16x4*)(&Bs[readIdx][bLdsReadBase + k_offset + 64 * BK_PAD]);
-            b[3] = *(bf16x4*)(&Bs[readIdx][bLdsReadBase + k_offset + 96 * BK_PAD]);
             
-            // MFMA 2x4 grid
-            // Row 0 (uses a[0])
             acc[0] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[0], b[0], acc[0], 0, 0, 0);
             acc[1] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[0], b[1], acc[1], 0, 0, 0);
-            acc[2] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[0], b[2], acc[2], 0, 0, 0);
-            acc[3] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[0], b[3], acc[3], 0, 0, 0);
-            
-            // Row 1 (uses a[1])
-            acc[4] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[1], b[0], acc[4], 0, 0, 0);
-            acc[5] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[1], b[1], acc[5], 0, 0, 0);
-            acc[6] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[1], b[2], acc[6], 0, 0, 0);
-            acc[7] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[1], b[3], acc[7], 0, 0, 0);
+            acc[2] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[1], b[0], acc[2], 0, 0, 0);
+            acc[3] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[1], b[1], acc[3], 0, 0, 0);
         }
         
         asm volatile("s_waitcnt vmcnt(0)\n" ::: "memory");
-        
-        *(bf16x4*)(&As[writeIdx][aLdsWrite]) = prefetchA;
-        *(bf16x8*)(&Bs[writeIdx][bLdsWrite]) = prefetchB[0];
-        *(bf16x8*)(&Bs[writeIdx][bLdsWrite + 8]) = prefetchB[1];
-        
+        if (loadA) {
+            *(bf16x8*)(&As[writeIdx][aLdsWrite]) = *(bf16x8*)&prefetchA;
+        }
+        *(bf16x8*)(&Bs[writeIdx][bLdsWrite]) = prefetchB;
         __builtin_amdgcn_s_barrier();
-        
         A += BK;
         B += BK;
     }
 
-    // ================== Epilogue ==================
     readIdx = writeIdx;
-    
     #pragma unroll
     for (int k_iter = 0; k_iter < 2; ++k_iter) {
         const int k_offset = k_iter * 8;
-        
         a[0] = *(bf16x4*)(&As[readIdx][aLdsReadBase + k_offset]);
         a[1] = *(bf16x4*)(&As[readIdx][aLdsReadBase + k_offset + 32 * BK_PAD]);
-        
         b[0] = *(bf16x4*)(&Bs[readIdx][bLdsReadBase + k_offset]);
         b[1] = *(bf16x4*)(&Bs[readIdx][bLdsReadBase + k_offset + 32 * BK_PAD]);
-        b[2] = *(bf16x4*)(&Bs[readIdx][bLdsReadBase + k_offset + 64 * BK_PAD]);
-        b[3] = *(bf16x4*)(&Bs[readIdx][bLdsReadBase + k_offset + 96 * BK_PAD]);
-        
         acc[0] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[0], b[0], acc[0], 0, 0, 0);
         acc[1] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[0], b[1], acc[1], 0, 0, 0);
-        acc[2] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[0], b[2], acc[2], 0, 0, 0);
-        acc[3] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[0], b[3], acc[3], 0, 0, 0);
-        
-        acc[4] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[1], b[0], acc[4], 0, 0, 0);
-        acc[5] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[1], b[1], acc[5], 0, 0, 0);
-        acc[6] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[1], b[2], acc[6], 0, 0, 0);
-        acc[7] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[1], b[3], acc[7], 0, 0, 0);
+        acc[2] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[1], b[0], acc[2], 0, 0, 0);
+        acc[3] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[1], b[1], acc[3], 0, 0, 0);
     }
 
-    // ================== Output ==================
-    for(int b=0; b<8; ++b) { 
-         int b_row = (b >= 4) ? 1 : 0; 
-         int b_col = b % 4;
-         
-         // Global Base (Top-Left of the 32x32 block)
+    for(int b=0; b<4; ++b) {
+         int b_row = (b >= 2) ? 1 : 0; 
+         int b_col = b % 2;            
          int global_base_row = warpRow * 64 + b_row * 32;
-         int global_base_col = warpCol * 128 + b_col * 32;
-         
-         
+         int global_base_col = warpCol * 64 + b_col * 32;
          bhalf_t* C_ptr = C + (global_base_row + 4 * threadRow) * strideCM + (global_base_col + threadCol) * strideCN;
-         
+         #pragma unroll
+         for (int i = 0; i < 16; ++i) {
+             const int rowNum = i & 3;
+             const int rowIdx = i >> 2;
+             C_ptr[(rowNum + rowIdx * 8) * strideCM] = static_cast<bhalf_t>(acc[b][i]);
+         }
+    }
+}
+
+// ============================================================================
+// 128x256x16 Optimized Implementation (8 Warps / 512 Threads)
+// ============================================================================
+
+template <const uint BM = 128, const uint BN = 256, const uint BK = 16>
+__global__ void
+__launch_bounds__(512, 1)
+batched_gemm_128x256x16_transe_improved(
+    uint M, uint N, uint K, uint Batch,
+    const bhalf_t *A, const bhalf_t *B, bhalf_t *C,
+    dim3 strideA, dim3 strideB, dim3 strideC)
+{
+    const int blockRow = blockIdx.y;
+    const int blockCol = blockIdx.x;
+    const int blockBatch = blockIdx.z;
+    const int tid = threadIdx.x;
+
+    const int warpIdx = tid / 64;
+    const int warpRow = warpIdx / 4;  // 0..1
+    const int warpCol = warpIdx % 4;  // 0..3
+
+    const int threadIdxInWarp = tid & 63;
+    const int threadRow = threadIdxInWarp >> 5; 
+    const int threadCol = threadIdxInWarp & 31; 
+
+    const int strideAB = strideA.x;
+    const int strideAM = strideA.y;
+    const int strideBB = strideB.x;
+    const int strideBN = strideB.z; 
+    const int strideCB = strideC.x;
+    const int strideCM = strideC.y;
+    const int strideCN = strideC.z;
+
+    A += blockBatch * strideAB + blockRow * BM * strideAM;
+    B += blockBatch * strideBB + blockCol * BN * strideBN; 
+    C += blockBatch * strideCB + blockRow * BM * strideCM + blockCol * BN * strideCN;
+
+    constexpr uint BK_PAD = BK + 4;
+    __shared__ __attribute__((aligned(128))) bhalf_t As[2][BM * BK_PAD]; 
+    __shared__ __attribute__((aligned(128))) bhalf_t Bs[2][BN * BK_PAD];
+
+    bf16x4 a[2], b[2];
+    floatx16 acc[4] = {0}; 
+    
+    bf16x8 prefetchB; 
+    bf16x4 prefetchA; 
+
+    int b_row_load = tid % 256;
+    int b_col_offset = (tid / 256) * 8; 
+    
+    int a_row_load = tid % 128;
+    int a_col_offset = (tid / 128) * 4; 
+    
+    uint aLdsWrite = a_row_load * BK_PAD + a_col_offset;
+    uint bLdsWrite = b_row_load * BK_PAD + b_col_offset;
+
+    uint aLdsReadBase = (warpRow * 64 + threadCol) * BK_PAD + threadRow * 4;
+    uint bLdsReadBase = (warpCol * 64 + threadCol) * BK_PAD + threadRow * 4;
+
+    int writeIdx = 0;
+    int readIdx = 0;
+
+    asm volatile("global_load_dwordx2 %0, %1, off\n" : "=v"(prefetchA) : "v"(&A[a_row_load * strideAM + a_col_offset]) : "memory");
+    asm volatile("global_load_dwordx4 %0, %1, off\n" : "=v"(prefetchB) : "v"(&B[b_row_load * strideBN + b_col_offset]) : "memory");
+    
+    asm volatile("s_waitcnt vmcnt(0)\n" ::: "memory");
+    
+    *(bf16x4*)(&As[writeIdx][aLdsWrite]) = prefetchA;
+    *(bf16x8*)(&Bs[writeIdx][bLdsWrite]) = prefetchB;
+    
+    __builtin_amdgcn_s_barrier();
+    
+    A += BK;
+    B += BK;
+
+    const int numTiles = (K - BK) / BK;
+
+    for (int tile = 0; tile < numTiles; ++tile) {
+        readIdx = writeIdx;
+        writeIdx = 1 - writeIdx;
+        
+        asm volatile("global_load_dwordx2 %0, %1, off\n" : "=v"(prefetchA) : "v"(&A[a_row_load * strideAM + a_col_offset]) : "memory");
+        asm volatile("global_load_dwordx4 %0, %1, off\n" : "=v"(prefetchB) : "v"(&B[b_row_load * strideBN + b_col_offset]) : "memory");
+        
+        #pragma unroll
+        for (int k_iter = 0; k_iter < 2; ++k_iter) {
+            const int k_offset = k_iter * 8; 
+            a[0] = *(bf16x4*)(&As[readIdx][aLdsReadBase + k_offset]);
+            a[1] = *(bf16x4*)(&As[readIdx][aLdsReadBase + k_offset + 32 * BK_PAD]);
+            b[0] = *(bf16x4*)(&Bs[readIdx][bLdsReadBase + k_offset]);
+            b[1] = *(bf16x4*)(&Bs[readIdx][bLdsReadBase + k_offset + 32 * BK_PAD]);
+            
+            acc[0] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[0], b[0], acc[0], 0, 0, 0);
+            acc[1] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[0], b[1], acc[1], 0, 0, 0);
+            acc[2] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[1], b[0], acc[2], 0, 0, 0);
+            acc[3] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[1], b[1], acc[3], 0, 0, 0);
+        }
+        
+        asm volatile("s_waitcnt vmcnt(0)\n" ::: "memory");
+        *(bf16x4*)(&As[writeIdx][aLdsWrite]) = prefetchA;
+        *(bf16x8*)(&Bs[writeIdx][bLdsWrite]) = prefetchB;
+        __builtin_amdgcn_s_barrier();
+        A += BK;
+        B += BK;
+    }
+
+    readIdx = writeIdx;
+    #pragma unroll
+    for (int k_iter = 0; k_iter < 2; ++k_iter) {
+        const int k_offset = k_iter * 8;
+        a[0] = *(bf16x4*)(&As[readIdx][aLdsReadBase + k_offset]);
+        a[1] = *(bf16x4*)(&As[readIdx][aLdsReadBase + k_offset + 32 * BK_PAD]);
+        b[0] = *(bf16x4*)(&Bs[readIdx][bLdsReadBase + k_offset]);
+        b[1] = *(bf16x4*)(&Bs[readIdx][bLdsReadBase + k_offset + 32 * BK_PAD]);
+        acc[0] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[0], b[0], acc[0], 0, 0, 0);
+        acc[1] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[0], b[1], acc[1], 0, 0, 0);
+        acc[2] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[1], b[0], acc[2], 0, 0, 0);
+        acc[3] = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a[1], b[1], acc[3], 0, 0, 0);
+    }
+
+    for(int b=0; b<4; ++b) {
+         int b_row = (b >= 2) ? 1 : 0; 
+         int b_col = b % 2;            
+         int global_base_row = warpRow * 64 + b_row * 32;
+         int global_base_col = warpCol * 64 + b_col * 32;
+         bhalf_t* C_ptr = C + (global_base_row + 4 * threadRow) * strideCM + (global_base_col + threadCol) * strideCN;
          #pragma unroll
          for (int i = 0; i < 16; ++i) {
              const int rowNum = i & 3;
