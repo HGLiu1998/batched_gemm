@@ -436,7 +436,7 @@ batched_gemm_128x128x16_transe_ultra(
 
 template <const uint BM = 128, const uint BN = 512, const uint BK = 16>
 __global__ void
-__launch_bounds__(512, 1)
+__launch_bounds__(512, 2)
 batched_gemm_128x512x16_transe_improved(
     uint M, uint N, uint K, uint Batch,
     const bhalf_t *A, const bhalf_t *B, bhalf_t *C,
@@ -541,30 +541,6 @@ batched_gemm_128x512x16_transe_improved(
     // Base for Warp
     // A: WarpRow * 64 rows.
     // B: WarpCol * 128 cols.
-    
-    // MFMA swizzled read: (lane%32) is row offset within 32-block.
-    // A Read: As[warpRow*64 + lane%32][0..7] (for K=0..7)
-    // Actually `aLdsReadOffset` formula:
-    // (threadCol + warpRow * 32) * BK_PAD + threadRow * 4
-    // threadCol is lane%32. Correct.
-    // warpRow*32 shifts base by 32? No, 64 rows per warp implies...
-    // Wait, `aLdsReadOffset` existing logic: `(threadCol + warpRow * 32)`
-    // If warpRow=1, offset 32.
-    // But warp 1 handles rows 64..127?
-    // In 128x128 kernel, warpRow was 0..1.
-    // Existing code: `a[1] = ... + 64 * BK_PAD`.
-    // This suggests a jump of 64 rows.
-    // If `a[0]` is 0..31, `a[1]` at +64 would be 64..95?
-    // That would mean Warps are interleaved?
-    // Warp 0 does rows 0..31 and 64..95.
-    // Warp 1 does rows 32..63 and 96..127.
-    // This is a valid tiling strategy (swizzled warps).
-    // I should stick to this or simple tiling? 
-    // Simple tiling is easier to debug. 2x4.
-    // Warp 0: Rows 0..63. (Blocks 0,1).
-    // Warp 1: Rows 64..127. (Blocks 2,3).
-    // LDS Read Base for Warp 0: 0.
-    // LDS Read Base for Warp 1: 64 * BK_PAD.
     
     uint aLdsReadBase = (warpRow * 64 + threadCol) * BK_PAD + threadRow * 4;
     // If warpRow=0: 0..31.
@@ -686,46 +662,6 @@ batched_gemm_128x512x16_transe_improved(
          int global_base_row = warpRow * 64 + b_row * 32;
          int global_base_col = warpCol * 128 + b_col * 32;
          
-         // C pointer for this thread
-         // Thread in 32x32 block (MFMA mapping):
-         // There are 64 threads in a wavefront.
-         // A 32x32 block has 1024 elements.
-         // Each thread holds 16 elements.
-         // Mapping: 
-         // row = (tid / 32) * 4? No.
-         // Use the existing efficient store pattern if applicable.
-         // Existing pattern:
-         // C += (4 * threadRow + warpRow * 32) * N + threadCol + warpCol * 32;
-         // It computed a base pointer.
-         // threadRow (0..1), threadCol (0..31).
-         // 4 * threadRow -> 0 or 4.
-         // It seems existing pattern handles the swizzle.
-         // Let's use generic logic for safety.
-         
-         // Standard MFMA 32x32 output:
-         // Each thread holds 16 elements.
-         // acc[i] corresponds to C[row + i/4][col + i%4]? No.
-         // The mapping is complex.
-         // Usually: 
-         // C[ lane/32 * 16 + lane%32 + k*?? ]
-         
-         // Let's copy the store logic from 128x128 but adapted.
-         // Old: C += (4 * threadRow + warpRow * 32) * N + threadCol + warpCol * 32;
-         // This implies for Warp 0 (warpRow=0, warpCol=0):
-         // Base = 4*threadRow * N + threadCol.
-         // threadRow 0 -> Row 0. threadRow 1 -> Row 4.
-         // Stores 16 elements.
-         // Loop i=0..15.
-         // rowNum = i&3; rowIdx = i>>2.
-         // Offset = (rowNum + rowIdx*8) * N.
-         // i=0: +0.
-         // i=1: +N.
-         // i=4: +8N.
-         // i=15: +3+24N = +27N.
-         // Max row offset: 4*1 + 27 = 31.
-         // So it covers rows 0..31 for that thread?
-         // This seems to match the 32x32 block height.
-         // So we can re-use this logic relative to the block base.
          
          bhalf_t* C_ptr = C + (global_base_row + 4 * threadRow) * strideCM + (global_base_col + threadCol) * strideCN;
          
