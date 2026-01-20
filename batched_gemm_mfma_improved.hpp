@@ -581,7 +581,7 @@ batched_gemm_128x512x16_transe_improved(
 
 template <const uint BM = 128, const uint BN = 256, const uint BK = 16>
 __global__ void
-__launch_bounds__(512, 1)
+__launch_bounds__(512, 2)
 batched_gemm_128x256x16_transe_improved(
     uint M, uint N, uint K, uint Batch,
     const bhalf_t *A, const bhalf_t *B, bhalf_t *C,
