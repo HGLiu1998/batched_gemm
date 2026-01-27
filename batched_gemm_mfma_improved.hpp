@@ -312,14 +312,14 @@ batched_gemm_128x256x16_transe_improved(
 
     // ========== Memory Offset Calculations ==========
     // Global memory offsets for loading
-    // For A: warpRow determines which 64 rows (0 or 1), each warp loads 64 rows x 8 cols
-    // For B: warpCol determines which 64 rows (0-3), each warp loads 64 rows x 8 cols
+    // For A: warpRow determines which 64 rows (0 or 1), warpCol&1 determines K cols (0-7 or 8-15)
+    // For B: warpCol determines which 64 cols (0-3), warpRow determines K rows (0-7 or 8-15)
     const uint aGlobalOffset = (threadIdxInWarp + warpRow * 64) * strideAM + ((warpCol & 1) * 8) * strideAK;
-    const uint bGlobalOffset = (threadIdxInWarp + warpCol * 64) * strideBN + ((warpRow * 2 + (warpCol >> 1)) * 8) * strideBK;
+    const uint bGlobalOffset = (threadIdxInWarp + warpCol * 64) * strideBN + (warpRow * 8) * strideBK;
 
     // LDS write offsets
     const uint aLdsWriteOffset = (threadIdxInWarp + warpRow * 64) * BK_PAD + ((warpCol & 1) * 8);
-    const uint bLdsWriteOffset = (threadIdxInWarp + warpCol * 64) * BK_PAD + ((warpRow * 2 + (warpCol >> 1)) * 8);
+    const uint bLdsWriteOffset = (threadIdxInWarp + warpCol * 64) * BK_PAD + (warpRow * 8);
 
     // LDS read offsets (for MFMA operands)
     const uint aLdsReadOffset = (threadCol + warpRow * 32) * BK_PAD + threadRow * 4;
