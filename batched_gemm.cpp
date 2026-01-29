@@ -38,7 +38,7 @@ int main(int argc, char* argv[])
 {
     // tokens = bs * (MTP + 1)
     hipStream_t stream;
-    HIP_CHECK(hipStreamCreate(&stream));
+    HIP_CHECK_ERROR(hipStreamCreate(&stream));
     hipEvent_t start, end;
 
     //const unsigned int tokens = 128;
