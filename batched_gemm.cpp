@@ -37,8 +37,8 @@ void randomize_matrix(bhalf_t* mat, int N) {
 int main(int argc, char* argv[])
 {
     // tokens = bs * (MTP + 1)
-    hipStream_t stream;
-    HIP_CHECK_ERROR(hipStreamCreate(&stream));
+    //hipStream_t stream;
+    //HIP_CHECK_ERROR(hipStreamCreate(&stream));
     hipEvent_t start, end;
 
     //const unsigned int tokens = 128;
@@ -108,8 +108,8 @@ int main(int argc, char* argv[])
 
     if (transpose) {
         for (int i = 0; i < warm_ups; ++i) {
-            batched_gemm_128x128x16_transe_improved<<<gridDim, blockDim, 0, stream>>>(M, N, K, Batch, dA, dB, dC, strideA, strideB, strideC);
-            HIP_CHECK_ERROR(hipStreamSynchronize(stream));
+            batched_gemm_128x128x16_transe_improved<<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC, strideA, strideB, strideC);
+            //HIP_CHECK_ERROR(hipStreamSynchronize(stream));
             //batched_matrix_multiplication_coalesce<<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC);
         }
         
@@ -120,8 +120,8 @@ int main(int argc, char* argv[])
         hipEventRecord(start, NULL);
         
         for (int i = 0; i < total_loop; ++i) {
-            batched_gemm_128x128x16_transe_improved<<<gridDim, blockDim, 0, stream>>>(M, N, K, Batch, dA, dB, dC, strideA, strideB, strideC);
-            HIP_CHECK_ERROR(hipStreamSynchronize(stream));
+            batched_gemm_128x128x16_transe_improved<<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC, strideA, strideB, strideC);
+            //HIP_CHECK_ERROR(hipStreamSynchronize(stream));
             //batched_matrix_multiplication_coalesce<<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC);
         }
 
@@ -134,8 +134,8 @@ int main(int argc, char* argv[])
         hipEventDestroy(end);
 
         HIP_CHECK_ERROR(hipMemset(dC, 0, sizeC));
-        batched_gemm_128x128x16_transe_improved<<<gridDim, blockDim, 0, stream>>>(M, N, K, Batch, dA, dB, dC, strideA, strideB, strideC);
-        HIP_CHECK_ERROR(hipStreamSynchronize(stream));
+        batched_gemm_128x128x16_transe_improved<<<gridDim, blockDim>>>(M, N, K, Batch, dA, dB, dC, strideA, strideB, strideC);
+        //HIP_CHECK_ERROR(hipStreamSynchronize(stream));
         HIP_CHECK_ERROR(hipMemcpy(C, dC, sizeC, hipMemcpyDeviceToHost));
     } else {
         for (int i = 0; i < warm_ups; ++i) {
